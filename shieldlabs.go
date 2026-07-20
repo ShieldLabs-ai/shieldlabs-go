@@ -98,7 +98,6 @@ type WebhookDetectionFlags struct {
 	SearchBot           bool `json:"search_bot"`
 	SuspiciousPaidClick bool `json:"suspicious_paid_click"`
 	JavascriptDisabled  bool `json:"javascript_disabled"`
-	StunRequestSeen     bool `json:"stun_request_seen"`
 	StunNotChecked      bool `json:"stun_not_checked"`
 }
 
