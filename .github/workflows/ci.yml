@@ -5,15 +5,59 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: Test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        go-version: ["1.21", "1.22"]
+        go: ["1.23", "1.24", "1.25", "oldstable", "stable"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          go-version: ${{ matrix.go-version }}
-      - run: go test ./...
+          persist-credentials: false
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+
+      - name: Check formatting
+        if: matrix.go == '1.24'
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "Run gofmt on:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -cover ./...
+
+      - name: Build
+        run: go build ./...
+
+  staticcheck:
+    name: Staticcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.24"
+          cache: false
+
+      # Pinned so that a new staticcheck release cannot change the result.
+      - name: Staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.6.1 ./...
