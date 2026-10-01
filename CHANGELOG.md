@@ -4,6 +4,12 @@ All notable changes to this module are documented in this file. The format is ba
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this module follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `sync.sh` downloads the OpenAPI description and `generate.sh` rebuilds `generated/` from it. The supported client is unchanged.
+
 ## [1.0.0] - 2026-09-30
 
 First stable release. It replaces the preview package (`New`, `GetHistory`, `VerifyWebhook`)

@@ -345,6 +345,14 @@ Only GET requests are sent, and failed attempts are retried up to `WithMaxRetrie
 
 ## Development
 
+Refresh the generated client when the API description changes. This does not replace the supported library in this repository.
+
+```bash
+./sync.sh      # download the current OpenAPI description into resources/
+./generate.sh  # rebuild generated/ from that file
+```
+
+
 ```sh
 # with a local Go toolchain
 test -z "$(gofmt -l .)" && go vet ./... && go test -race -cover ./... && go build ./...
