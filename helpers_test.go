@@ -23,7 +23,7 @@ import (
 const (
 	testAPIKey    = "sec_abcd1234-efgh5678-ijkl9012"
 	testSecretKey = "0123456789abcdef0123456789abcdef"
-	testRequestID = "02f1d973-84db-4156-a7f7-e799e6bf389b"
+	testRequestID = "a5b7c9d1-e3f5-4a7b-9c1d-3e5f7a9b1c3d"
 )
 
 // readFixture returns a file from testdata/.

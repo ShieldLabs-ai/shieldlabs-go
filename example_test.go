@@ -45,7 +45,7 @@ func ExampleHistoryService_Search() {
 	// How many identifications, and how many distinct accounts, has this
 	// device? Skip the nil device ID (no usable device signals): it matches
 	// unrelated identifications.
-	deviceID := "ac7c303d-971b-41d1-8e25-cd5b46b46aed"
+	deviceID := "d8e0f2a4-b6c8-4d0e-bf2a-4b6c8d0e2f4a"
 	if deviceID == shieldlabs.NilUUID {
 		return
 	}
@@ -111,7 +111,7 @@ func ExampleEvaluateIdentification() {
 	now := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
 	ident := &shieldlabs.Identification{
 		RequestID:  "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53",
-		DeviceID:   "ac7c303d-971b-41d1-8e25-cd5b46b46aed",
+		DeviceID:   "d8e0f2a4-b6c8-4d0e-bf2a-4b6c8d0e2f4a",
 		RiskScore:  65,
 		ObservedAt: now.Add(-20 * time.Second),
 	}

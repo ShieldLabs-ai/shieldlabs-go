@@ -20,7 +20,7 @@ func TestHistorySearchFixturePage(t *testing.T) {
 	})
 	c, _ := newTestClient(t, srv.URL)
 
-	page, err := c.History.Search(context.Background(), LookupDeviceID, "AC7C303D-971B-41D1-8E25-CD5B46B46AED", &HistorySearchOptions{Limit: 50, Offset: 100})
+	page, err := c.History.Search(context.Background(), LookupDeviceID, "D8E0F2A4-B6C8-4D0E-BF2A-4B6C8D0E2F4A", &HistorySearchOptions{Limit: 50, Offset: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestHistorySearchFixturePage(t *testing.T) {
 	if req.Method != http.MethodGet {
 		t.Errorf("method %s", req.Method)
 	}
-	if got := req.URL.EscapedPath(); got != "/api/v1/history/device_id/ac7c303d-971b-41d1-8e25-cd5b46b46aed" {
+	if got := req.URL.EscapedPath(); got != "/api/v1/history/device_id/d8e0f2a4-b6c8-4d0e-bf2a-4b6c8d0e2f4a" {
 		t.Errorf("path %s (UUIDs are sent lowercase)", got)
 	}
 	if got := req.URL.Query().Get("limit"); got != "50" {

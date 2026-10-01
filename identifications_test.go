@@ -715,7 +715,7 @@ func TestGetValidation(t *testing.T) {
 		t.Errorf("validation errors must not send requests, sent %d", srv.Count())
 	}
 	// Upper-case request IDs are accepted and sent lowercase.
-	if _, err := c.Identifications.Get(context.Background(), "02F1D973-84DB-4156-A7F7-E799E6BF389B", &GetIdentificationOptions{NoWait: true}); err != nil {
+	if _, err := c.Identifications.Get(context.Background(), "A5B7C9D1-E3F5-4A7B-9C1D-3E5F7A9B1C3D", &GetIdentificationOptions{NoWait: true}); err != nil {
 		t.Fatal(err)
 	}
 	if got := srv.Request(0).URL.EscapedPath(); got != "/api/v1/history/request_id/"+testRequestID {

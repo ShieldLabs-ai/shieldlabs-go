@@ -40,7 +40,7 @@ func TestRiskBandCases(t *testing.T) {
 func freshIdentification(now time.Time) *Identification {
 	return &Identification{
 		RequestID:  testRequestID,
-		DeviceID:   "ac7c303d-971b-41d1-8e25-cd5b46b46aed",
+		DeviceID:   "d8e0f2a4-b6c8-4d0e-bf2a-4b6c8d0e2f4a",
 		RiskScore:  10,
 		ObservedAt: now.Add(-30 * time.Second),
 		Source:     SourceHistory,

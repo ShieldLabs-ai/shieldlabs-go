@@ -1,0 +1,20 @@
+{
+  "source": "shieldlabs-openapi",
+  "files": {
+    "error-responses.json": "testdata/error-responses.json",
+    "history-empty.json": "testdata/history-empty.json",
+    "history-page.json": "testdata/history-page.json",
+    "management-profile-expected.json": "testdata/management-profile-expected.json",
+    "management-profile.json": "testdata/management-profile.json",
+    "normalization-cases.json": "testdata/normalization-cases.json",
+    "risk-band-cases.json": "testdata/risk-band-cases.json",
+    "signal-slug-cases.json": "testdata/signal-slug-cases.json",
+    "webhook-identification-scored.json": "testdata/webhook-identification-scored.json",
+    "webhook-identification-scored.raw.txt": "testdata/webhook-identification-scored.raw.txt",
+    "webhook-ping.json": "testdata/webhook-ping.json",
+    "webhook-ping.raw.txt": "testdata/webhook-ping.raw.txt",
+    "webhook-rate-limited.json": "testdata/webhook-rate-limited.json",
+    "webhook-signature-vectors.json": "testdata/webhook-signature-vectors.json",
+    "webhook-test-delivery.json": "testdata/webhook-test-delivery.json"
+  }
+}

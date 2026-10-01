@@ -61,3 +61,13 @@ jobs:
       # Pinned so that a new staticcheck release cannot change the result.
       - name: Staticcheck
         run: go run honnef.co/go/tools/cmd/staticcheck@v0.6.1 ./...
+
+  contract:
+    name: Shared contract files match the lock
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Contract files match .shieldlabs-contract.lock
+        run: python3 scripts/sync_contract.py --check

@@ -44,7 +44,7 @@ func historyServer(t *testing.T, rows map[string]string) *httptest.Server {
 			return
 		}
 		created := time.Now().UTC().Format("2006-01-02 15:04:05.000")
-		_, _ = fmt.Fprintf(w, `{"data":[{"request_id":%q,"device_id":"ac7c303d-971b-41d1-8e25-cd5b46b46aed","created_at":%q%s}],"total":1}`, id, created, extra)
+		_, _ = fmt.Fprintf(w, `{"data":[{"request_id":%q,"device_id":"d8e0f2a4-b6c8-4d0e-bf2a-4b6c8d0e2f4a","created_at":%q%s}],"total":1}`, id, created, extra)
 	}))
 	t.Cleanup(srv.Close)
 	return srv

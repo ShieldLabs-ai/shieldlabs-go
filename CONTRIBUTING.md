@@ -34,7 +34,11 @@ go run honnef.co/go/tools/cmd/staticcheck@v0.6.1 ./...
 - Standard library only.
 - Every change needs tests. Keep line coverage above 90 %.
 - `testdata/` holds shared test fixtures that every ShieldLabs server SDK passes. Keep them
-  byte-exact: do not edit or reformat them by hand. Tests must keep passing all of them.
+  byte-exact: do not edit or reformat them by hand. Tests must keep passing all of them. They are
+  synced from `contract/` in shieldlabs-openapi: `contract-sync.json` maps each file,
+  `.shieldlabs-contract.lock` records the release, CI runs
+  `python3 scripts/sync_contract.py --check`, and the `contract-sync.yml` workflow opens a pull
+  request when a new release changes them.
 - Documentation and comments use plain, technical English. Follow the existing wording for
   product terms (identification, request ID, risk signals, risk bands).
 - Commit messages follow the conventional style: `feat: ...`, `fix: ...`, `docs: ...`,
