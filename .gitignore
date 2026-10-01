@@ -1,8 +1,17 @@
+# Build and test output
 bin/
+/examples/nethttp/nethttp
 *.exe
 *.test
 *.out
+coverage.*
+
+# Local environment
 .env
 .env.*
+
+# Editors and operating systems
+.idea/
+.vscode/
 .DS_Store
 .history
