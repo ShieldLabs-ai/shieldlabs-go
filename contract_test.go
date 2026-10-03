@@ -13,8 +13,11 @@ import (
 
 func TestGeneratedContractCoverage(t *testing.T) {
 	flags := webhookFlags(contract.ReadDetectionFlags(nil))
-	if len(flags) != contract.DetectionFlagsFieldCount || len(flags) != len(flagNames) {
+	if len(flags) != contract.DetectionFlagsFieldCount {
 		t.Fatal("generated flag coverage must match normalization")
+	}
+	if len(flags) != len(flagNames) {
+		t.Fatal("generated flag coverage must match the public flag inventory")
 	}
 	for _, name := range flagNames {
 		if _, ok := flags[name]; !ok {
