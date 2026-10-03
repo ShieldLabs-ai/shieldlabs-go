@@ -40,6 +40,13 @@ jobs:
             exit 1
           fi
 
+      - name: Verify supported wire contract and installed consumer
+        run: |
+          python3 -m pip install -r scripts/requirements.txt
+          python3 scripts/generate-contract.py --check
+          python3 scripts/check-contract-drift.py
+          python3 scripts/check-consumer.py
+
   release:
     needs: verify
     runs-on: ubuntu-latest

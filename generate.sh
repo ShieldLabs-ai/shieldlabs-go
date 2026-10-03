@@ -67,3 +67,5 @@ module github.com/ShieldLabs-ai/shieldlabs-go/generated
 go 1.23
 MOD
 fi
+
+python3 scripts/generate-contract.py

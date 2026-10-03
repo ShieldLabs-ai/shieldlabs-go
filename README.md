@@ -345,13 +345,26 @@ Only GET requests are sent, and failed attempts are retried up to `WithMaxRetrie
 
 ## Development
 
-Refresh the generated client when the API description changes. This does not replace the supported library in this repository.
+The supported client consumes typed wire views generated from the checked-in OpenAPI description.
+History queries, profile headers and response normalization use these views directly: renaming a
+consumed field or changing its type makes the client fail compilation. Unknown fields and string
+values, nulls and malformed historical values still follow the existing tolerant normalization;
+`Raw` retains the original decoded object. The public API, HTTP transport and retry logic remain
+handwritten. The separate `generated/` reference client is not used at runtime because its strict
+decoders reject some values this SDK intentionally tolerates.
 
 ```bash
+python3 -m pip install -r scripts/requirements.txt  # development only
 ./sync.sh      # download the current OpenAPI description into resources/
-./generate.sh  # rebuild generated/ from that file
+./generate.sh  # rebuild reference client and supported wire views
+python3 scripts/generate-contract.py --check
+python3 scripts/check-contract-drift.py
+python3 scripts/check-consumer.py
 ```
-
+`python3 scripts/generate-contract.py` rebuilds only the supported views in
+`internal/contract/`. Generation uses `gofmt` from the local Go toolchain, or the same
+Go 1.24 Docker image used for tests. Python and PyYAML are development tools, not
+dependencies of applications using this module.
 
 ```sh
 # with a local Go toolchain

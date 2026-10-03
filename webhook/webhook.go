@@ -30,6 +30,7 @@ import (
 	"time"
 
 	shieldlabs "github.com/ShieldLabs-ai/shieldlabs-go"
+	"github.com/ShieldLabs-ai/shieldlabs-go/internal/contract"
 	"github.com/ShieldLabs-ai/shieldlabs-go/internal/wire"
 )
 
@@ -184,25 +185,24 @@ func parseEvent(payload []byte) (Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrParse, err)
 	}
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(payload, &fields); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrParse, err)
-	}
-	eventType, _ := raw["event_type"].(string)
+	var fields contract.IdentificationScoredBody = contract.ReadIdentificationScoredEvent(raw)
+	eventType := contract.String(fields.EventType())
 	if eventType == "" {
 		return nil, fmt.Errorf("%w: event_type is missing", ErrParse)
 	}
 	env := Envelope{EventType: eventType, Raw: raw}
-	env.SchemaVersion, _ = raw["schema_version"].(string)
-	if createdAt, ok := raw["created_at"].(string); ok {
-		env.CreatedAt, _ = wire.ParseRFC3339(createdAt)
-	}
+	env.SchemaVersion = contract.String(fields.SchemaVersion())
+	env.CreatedAt, _ = wire.ParseRFC3339(contract.String(fields.CreatedAt()))
 
 	switch eventType {
 	case EventTypeIdentificationScored:
-		data, ok := fields["data"]
-		if !ok || string(data) == "null" {
+		dataField := fields.Data()
+		if dataField.Raw == nil {
 			return nil, fmt.Errorf("%w: %s event without data", ErrParse, EventTypeIdentificationScored)
+		}
+		data, err := scoredDataJSON(dataField)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrParse, err)
 		}
 		ident, err := shieldlabs.ParseWebhookData(data)
 		if err != nil {
@@ -210,7 +210,18 @@ func parseEvent(payload []byte) (Event, error) {
 		}
 		return &IdentificationScoredEvent{Envelope: env, Data: ident}, nil
 	case EventTypePing:
+		var ping contract.WebhookPingBody = contract.ReadWebhookPingEvent(raw)
+		env.EventType = contract.String(ping.EventType())
+		env.SchemaVersion = contract.String(ping.SchemaVersion())
+		env.CreatedAt, _ = wire.ParseRFC3339(contract.String(ping.CreatedAt()))
 		return &PingEvent{Envelope: env}, nil
 	}
 	return &UnknownEvent{Envelope: env}, nil
+}
+
+// The signature was verified against the unchanged delivery before this step.
+// Re-encoding the decoded data preserves json.Number and unknown fields while
+// retaining the same normalization as ParseWebhookData.
+func scoredDataJSON(data contract.Value[contract.IdentificationScoredData]) ([]byte, error) {
+	return json.Marshal(data.Raw)
 }

@@ -7,29 +7,31 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ShieldLabs-ai/shieldlabs-go/internal/contract"
 	"github.com/ShieldLabs-ai/shieldlabs-go/internal/wire"
 )
 
-// historyFlagColumns maps a detection flag to its History row column. The
-// browser_vpn_proxy and ip_mismatch flags have no column and are derived.
-var historyFlagColumns = map[string]string{
-	FlagVPN:                 "is_vpn",
-	FlagPrivacyRelay:        "is_privacy_relay",
-	FlagTor:                 "is_tor",
-	FlagProxy:               "is_proxy",
-	FlagDatacenterIP:        "is_datacenter",
-	FlagAbuser:              "is_abuser",
-	FlagOSMismatch:          "is_os_mismatch",
-	FlagOSNotDetected:       "is_os_not_detected",
-	FlagTimezoneMismatch:    "is_timezone_mismatch",
-	FlagAntiDetectBrowser:   "is_antidetect",
-	FlagBrowserAutomation:   "is_browser_automation",
-	FlagIncognito:           "is_incognito",
-	FlagSearchBot:           "is_search_bot",
-	FlagSuspiciousPaidClick: "is_suspicious_paid_click",
-	FlagJavaScriptDisabled:  "is_js_disabled",
-	FlagStunNotChecked:      "is_stun_not_checked",
-	FlagCheckIncomplete:     "check_incomplete",
+// historyFlagColumns selects schema-derived flag values. Two flags are derived.
+func historyFlagColumns(row contract.HistoryRow) map[string]contract.Value[bool] {
+	return map[string]contract.Value[bool]{
+		FlagVPN:                 row.IsVPN(),
+		FlagPrivacyRelay:        row.IsPrivacyRelay(),
+		FlagTor:                 row.IsTor(),
+		FlagProxy:               row.IsProxy(),
+		FlagDatacenterIP:        row.IsDatacenter(),
+		FlagAbuser:              row.IsAbuser(),
+		FlagOSMismatch:          row.IsOSMismatch(),
+		FlagOSNotDetected:       row.IsOSNotDetected(),
+		FlagTimezoneMismatch:    row.IsTimezoneMismatch(),
+		FlagAntiDetectBrowser:   row.IsAntidetect(),
+		FlagBrowserAutomation:   row.IsBrowserAutomation(),
+		FlagIncognito:           row.IsIncognito(),
+		FlagSearchBot:           row.IsSearchBot(),
+		FlagSuspiciousPaidClick: row.IsSuspiciousPaidClick(),
+		FlagJavaScriptDisabled:  row.IsJsDisabled(),
+		FlagStunNotChecked:      row.IsStunNotChecked(),
+		FlagCheckIncomplete:     row.CheckIncomplete(),
+	}
 }
 
 // ipLeakPrefix starts the History description that reports a difference
@@ -58,78 +60,80 @@ func ParseWebhookData(data []byte) (*Identification, error) {
 	return identificationFromWebhookData(m), nil
 }
 
-func identificationFromHistoryRow(row map[string]any) *Identification {
+func identificationFromHistoryRow(raw map[string]any) *Identification {
+	row := contract.ReadHistoryRow(raw)
+	columns := historyFlagColumns(row)
 	var localIP, localCountry string
-	if src := wire.Strip(str(row["webrtc_leak_source"])); src != "" && src != "none" {
-		localIP, localCountry = normalizeIP(str(row["webrtc_leak_ip"])), str(row["webrtc_leak_country"])
+	if src := wire.Strip(stringField(row.WebrtcLeakSource())); src != "" && src != "none" {
+		localIP, localCountry = normalizeIP(stringField(row.WebrtcLeakIP())), stringField(row.WebrtcLeakCountry())
 	} else {
-		localIP, localCountry = normalizeIP(str(row["web_rtc_ip"])), str(row["web_rtc_country"])
+		localIP, localCountry = normalizeIP(stringField(row.WebRtcIP())), stringField(row.WebRtcCountry())
 	}
-	publicIP := normalizeIP(str(row["ip"]))
+	publicIP := normalizeIP(stringField(row.IP()))
 
-	signals, ipLeakDetail := historySignals(row["score_details"])
+	signals, ipLeakDetail := historySignals(row.ScoreDetails())
 
 	var flags DetectionFlags
-	searchBot := truthy(row["is_search_bot"])
+	searchBot := booleanField(row.IsSearchBot())
 	for _, name := range flagNames {
 		var v bool
 		switch name {
 		case FlagBrowserVPNProxy:
-			v = row["connection_type"] == "browser_vpn_proxy"
+			v = contract.String(row.ConnectionType()) == "browser_vpn_proxy"
 		case FlagIPMismatch:
 			v = !searchBot && (ipLeakDetail || (publicIP != "" && localIP != "" && publicIP != localIP))
 		default:
-			v = truthy(row[historyFlagColumns[name]])
+			v = booleanField(columns[name])
 		}
 		*flags.field(name) = v
 	}
 
-	domain := str(row["site_domain"])
+	domain := stringField(row.SiteDomain())
 	if domain == "" {
-		domain = str(row["domain"])
+		domain = stringField(row.Domain())
 	}
-	observedAt, _ := wire.ParseHistoryTime(str(row["created_at"]))
+	observedAt, _ := wire.ParseHistoryTime(stringField(row.CreatedAt()))
 
 	return &Identification{
-		RequestID:      str(row["request_id"]),
-		VisitorID:      str(row["visitor_id"]),
-		DeviceID:       str(row["device_id"]),
-		SessionID:      str(row["session_id"]),
-		CookieID:       str(row["cookie_id"]),
-		UserHID:        nullableString(row["user_hid"]),
+		RequestID:      stringField(row.RequestID()),
+		VisitorID:      stringField(row.VisitorID()),
+		DeviceID:       stringField(row.DeviceID()),
+		SessionID:      stringField(row.SessionID()),
+		CookieID:       stringField(row.CookieID()),
+		UserHID:        nullableStringField(row.UserHID()),
 		Domain:         domain,
-		PublicIP:       IPInfo{IP: publicIP, Country: str(row["country"])},
+		PublicIP:       IPInfo{IP: publicIP, Country: stringField(row.Country())},
 		LocalIP:        IPInfo{IP: localIP, Country: localCountry},
-		ConnectionType: ConnectionType(str(row["connection_type"])),
-		OS:             str(row["os"]),
-		Browser:        str(row["browser"]),
-		DeviceType:     str(row["device_type"]),
+		ConnectionType: ConnectionType(stringField(row.ConnectionType())),
+		OS:             stringField(row.OS()),
+		Browser:        stringField(row.Browser()),
+		DeviceType:     stringField(row.DeviceType()),
 		TrafficSource: TrafficSource{
-			Channel:        str(row["traffic_channel"]),
-			ReferrerDomain: str(row["referrer_domain"]),
-			LandingURL:     str(row["entry_url"]),
-			ClickIDType:    str(row["click_id_type"]),
-			UTMSource:      str(row["utm_source"]),
-			UTMMedium:      str(row["utm_medium"]),
-			UTMCampaign:    str(row["utm_campaign"]),
-			UTMContent:     str(row["utm_content"]),
-			UTMTerm:        str(row["utm_term"]),
+			Channel:        stringField(row.TrafficChannel()),
+			ReferrerDomain: stringField(row.ReferrerDomain()),
+			LandingURL:     stringField(row.EntryURL()),
+			ClickIDType:    stringField(row.ClickIDType()),
+			UTMSource:      stringField(row.UTMSource()),
+			UTMMedium:      stringField(row.UTMMedium()),
+			UTMCampaign:    stringField(row.UTMCampaign()),
+			UTMContent:     stringField(row.UTMContent()),
+			UTMTerm:        stringField(row.UTMTerm()),
 		},
-		RiskScore:      toInt(row["score"]),
+		RiskScore:      integerField(row.Score()),
 		Signals:        signals,
 		DetectionFlags: flags,
 		ObservedAt:     observedAt,
 		Source:         SourceHistory,
-		Raw:            row,
+		Raw:            raw,
 	}
 }
 
 // historySignals parses the score_details JSON string of a History row. It
 // keeps the entries with a non-zero integer Value, in order, and reports
 // whether an IP leak description was present (at any weight).
-func historySignals(scoreDetails any) ([]Signal, bool) {
+func historySignals(scoreDetails contract.Value[string]) ([]Signal, bool) {
 	signals := []Signal{}
-	text, _ := scoreDetails.(string)
+	text, _ := scoreDetails.Raw.(string)
 	if text == "" {
 		return signals, false
 	}
@@ -147,11 +151,12 @@ func historySignals(scoreDetails any) ([]Signal, bool) {
 		if !ok {
 			continue
 		}
-		desc, _ := d["Description"].(string)
+		detail := contract.ReadScoreDetail(d)
+		desc := contract.String(detail.Description())
 		if strings.HasPrefix(desc, ipLeakPrefix) {
 			ipLeak = true
 		}
-		num, ok := d["Value"].(json.Number)
+		num, ok := integerRaw(detail.Value()).(json.Number)
 		if !ok {
 			continue
 		}
@@ -165,63 +170,65 @@ func historySignals(scoreDetails any) ([]Signal, bool) {
 	return signals, ipLeak
 }
 
-func identificationFromWebhookData(data map[string]any) *Identification {
+func identificationFromWebhookData(raw map[string]any) *Identification {
+	data := contract.ReadIdentificationScoredData(raw)
 	var flags DetectionFlags
-	flagValues, _ := data["detection_flags"].(map[string]any)
+	flagValues := webhookFlags(contract.ReadDetectionFlags(contract.Object[contract.DetectionFlags](data.DetectionFlags())))
 	for _, name := range flagNames {
-		*flags.field(name) = truthy(flagValues[name])
+		*flags.field(name) = booleanField(flagValues[name])
 	}
 
-	ts, _ := data["traffic_source"].(map[string]any)
+	ts := contract.ReadTrafficSource(contract.Object[contract.TrafficSource](data.TrafficSource()))
 	signals := []Signal{}
-	if list, ok := data["signals"].([]any); ok {
+	if list := contract.Array[contract.Signal](data.Signals()); list != nil {
 		for _, item := range list {
 			s, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
-			signals = append(signals, Signal{Name: str(s["name"]), Weight: toInt(s["weight"])})
+			signal := contract.ReadSignal(s)
+			signals = append(signals, Signal{Name: stringField(signal.Name()), Weight: integerField(signal.Weight())})
 		}
 	}
-	observedAt, _ := wire.ParseRFC3339(str(data["observed_at"]))
+	observedAt, _ := wire.ParseRFC3339(stringField(data.ObservedAt()))
 
 	return &Identification{
-		RequestID:      str(data["request_id"]),
-		VisitorID:      str(data["visitor_id"]),
-		DeviceID:       str(data["device_id"]),
-		SessionID:      str(data["session_id"]),
-		CookieID:       str(data["cookie_id"]),
-		UserHID:        nullableString(data["user_hid"]),
-		Domain:         str(data["domain"]),
-		PublicIP:       webhookIP(data["public_ip"]),
-		LocalIP:        webhookIP(data["local_ip"]),
-		ConnectionType: ConnectionType(str(data["connection_type"])),
-		OS:             str(data["os"]),
-		Browser:        str(data["browser"]),
-		DeviceType:     str(data["device_type"]),
+		RequestID:      stringField(data.RequestID()),
+		VisitorID:      stringField(data.VisitorID()),
+		DeviceID:       stringField(data.DeviceID()),
+		SessionID:      stringField(data.SessionID()),
+		CookieID:       stringField(data.CookieID()),
+		UserHID:        nullableStringField(data.UserHID()),
+		Domain:         stringField(data.Domain()),
+		PublicIP:       webhookIP(data.PublicIP()),
+		LocalIP:        webhookIP(data.LocalIP()),
+		ConnectionType: ConnectionType(stringField(data.ConnectionType())),
+		OS:             stringField(data.OS()),
+		Browser:        stringField(data.Browser()),
+		DeviceType:     stringField(data.DeviceType()),
 		TrafficSource: TrafficSource{
-			Channel:        str(ts["channel"]),
-			ReferrerDomain: str(ts["referrer_domain"]),
-			LandingURL:     str(ts["landing_url"]),
-			ClickIDType:    str(ts["click_id_type"]),
-			UTMSource:      str(ts["utm_source"]),
-			UTMMedium:      str(ts["utm_medium"]),
-			UTMCampaign:    str(ts["utm_campaign"]),
-			UTMContent:     str(ts["utm_content"]),
-			UTMTerm:        str(ts["utm_term"]),
+			Channel:        stringField(ts.Channel()),
+			ReferrerDomain: stringField(ts.ReferrerDomain()),
+			LandingURL:     stringField(ts.LandingURL()),
+			ClickIDType:    stringField(ts.ClickIDType()),
+			UTMSource:      stringField(ts.UTMSource()),
+			UTMMedium:      stringField(ts.UTMMedium()),
+			UTMCampaign:    stringField(ts.UTMCampaign()),
+			UTMContent:     stringField(ts.UTMContent()),
+			UTMTerm:        stringField(ts.UTMTerm()),
 		},
-		RiskScore:      toInt(data["risk_score"]),
+		RiskScore:      integerField(data.RiskScore()),
 		Signals:        signals,
 		DetectionFlags: flags,
 		ObservedAt:     observedAt,
 		Source:         SourceWebhook,
-		Raw:            data,
+		Raw:            raw,
 	}
 }
 
-func webhookIP(v any) IPInfo {
-	m, _ := v.(map[string]any)
-	return IPInfo{IP: normalizeIP(str(m["ip"])), Country: str(m["country"])}
+func webhookIP(v contract.Value[contract.IpInfo]) IPInfo {
+	m := contract.ReadIpInfo(contract.Object[contract.IpInfo](v))
+	return IPInfo{IP: normalizeIP(stringField(m.IP())), Country: stringField(m.Country())}
 }
 
 // normalizeIP trims an IP value and turns the "no address" sentinels

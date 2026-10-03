@@ -4,12 +4,12 @@ import (
 	"context"
 	"iter"
 	"net/netip"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/ShieldLabs-ai/shieldlabs-go/internal/contract"
 	"github.com/ShieldLabs-ai/shieldlabs-go/internal/wire"
 )
 
@@ -20,19 +20,19 @@ type LookupType string
 const (
 	// LookupIP matches the public IP address, written as a dotted IPv4
 	// address.
-	LookupIP LookupType = "ip"
+	LookupIP LookupType = contract.SearchHistorySearchTypeIP
 	// LookupUserHID matches the User HID exactly (case-sensitive).
-	LookupUserHID LookupType = "user_hid"
+	LookupUserHID LookupType = contract.SearchHistorySearchTypeUserHID
 	// LookupVisitorID matches the visitor ID (UUID).
-	LookupVisitorID LookupType = "visitor_id"
+	LookupVisitorID LookupType = contract.SearchHistorySearchTypeVisitorID
 	// LookupRequestID matches the request ID (UUID).
-	LookupRequestID LookupType = "request_id"
+	LookupRequestID LookupType = contract.SearchHistorySearchTypeRequestID
 	// LookupDeviceID matches the device ID (UUID).
-	LookupDeviceID LookupType = "device_id"
+	LookupDeviceID LookupType = contract.SearchHistorySearchTypeDeviceID
 	// LookupSessionID matches the session ID (UUID).
-	LookupSessionID LookupType = "session_id"
+	LookupSessionID LookupType = contract.SearchHistorySearchTypeSessionID
 	// LookupCookieID matches the cookie ID (UUID).
-	LookupCookieID LookupType = "cookie_id"
+	LookupCookieID LookupType = contract.SearchHistorySearchTypeCookieID
 )
 
 const (
@@ -187,11 +187,12 @@ func dedupeKey(ident *Identification) string {
 	if ident.RequestID != "" && ident.RequestID != NilUUID {
 		return ident.RequestID
 	}
+	row := contract.ReadHistoryRow(ident.Raw)
 	return strings.Join([]string{
 		ident.RequestID,
-		str(ident.Raw["created_at"]),
-		str(ident.Raw["ver"]),
-		str(ident.Raw["ip"]),
+		stringField(row.CreatedAt()),
+		str(integerRaw(row.Ver())),
+		stringField(row.IP()),
 		ident.DeviceID,
 		ident.CookieID,
 		strconv.Itoa(ident.RiskScore),
@@ -202,12 +203,10 @@ func dedupeKey(ident *Identification) string {
 // is retried like every History request, 429 answers included, unless the
 // caller marks it as a single attempt.
 func historyRequest(lookup LookupType, value string, limit, offset int) apiRequest {
+	request := contract.SearchHistoryRequest{SearchType: string(lookup), Value: value, Limit: limit, Offset: offset}
 	return apiRequest{
-		path: "/api/v1/history/" + string(lookup) + "/" + escapePathValue(value),
-		query: url.Values{
-			"limit":  {strconv.Itoa(limit)},
-			"offset": {strconv.Itoa(offset)},
-		},
+		path:     request.Path(escapePathValue),
+		query:    request.Query(),
 		retry429: true,
 	}
 }
@@ -232,8 +231,9 @@ func parseHistoryPage(resp *apiResponse) (*HistoryPage, error) {
 			Header:     resp.header,
 		}
 	}
-	page := &HistoryPage{Data: []*Identification{}, Total: toInt64(body["total"])}
-	rows, _ := body["data"].([]any)
+	var response contract.SearchHistoryBody = contract.ReadHistoryPage(body)
+	page := &HistoryPage{Data: []*Identification{}, Total: integer64Field(response.Total())}
+	rows := contract.Array[contract.HistoryRow](response.Data())
 	for _, item := range rows {
 		if row, ok := item.(map[string]any); ok {
 			page.Data = append(page.Data, identificationFromHistoryRow(row))

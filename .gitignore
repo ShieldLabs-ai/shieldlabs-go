@@ -5,6 +5,9 @@ bin/
 *.test
 *.out
 coverage.*
+__pycache__/
+.contract-check-*/
+.consumer-check-*/
 
 # Local environment
 .env
