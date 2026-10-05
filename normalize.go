@@ -166,8 +166,16 @@ func historySignals(scoreDetails any) ([]Signal, bool) {
 }
 
 func identificationFromWebhookData(data map[string]any) *Identification {
+	var extension WebhookExtension
+	if raw, err := json.Marshal(data); err == nil {
+		_ = json.Unmarshal(raw, &extension)
+	}
 	var flags DetectionFlags
 	flagValues, _ := data["detection_flags"].(map[string]any)
+	flags.OSMismatch2 = truthy(flagValues["os_mismatch2"])
+	flags.DeviceSpoofing = truthy(flagValues["device_spoofing"])
+	flags.LatencyTest = truthy(flagValues["latency_test"])
+	flags.BannedIP = truthy(flagValues["banned_ip"])
 	for _, name := range flagNames {
 		*flags.field(name) = truthy(flagValues[name])
 	}
@@ -210,12 +218,13 @@ func identificationFromWebhookData(data map[string]any) *Identification {
 			UTMContent:     str(ts["utm_content"]),
 			UTMTerm:        str(ts["utm_term"]),
 		},
-		RiskScore:      toInt(data["risk_score"]),
-		Signals:        signals,
-		DetectionFlags: flags,
-		ObservedAt:     observedAt,
-		Source:         SourceWebhook,
-		Raw:            data,
+		WebhookExtension: extension,
+		RiskScore:        toInt(data["risk_score"]),
+		Signals:          signals,
+		DetectionFlags:   flags,
+		ObservedAt:       observedAt,
+		Source:           SourceWebhook,
+		Raw:              data,
 	}
 }
 

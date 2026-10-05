@@ -223,9 +223,9 @@ ShieldLabs posts `identification.scored` events to your endpoints, signed with `
 
 - Verify the **raw** body: read it with `io.ReadAll` and pass the bytes. Parsing and re-encoding the JSON changes them.
 - `ConstructEvent` returns `*IdentificationScoredEvent` (with `Data`, a normalized `Identification`), `*PingEvent` (sent by the analytics dashboard's "Verify" button) or `*UnknownEvent` for event types this version does not know. Acknowledge them all.
-- Today ShieldLabs sends one delivery per identification and endpoint, with a 1-second timeout and no retries. Answer with a 2xx status within one second and do slow work afterwards or in a queue.
+- Current failed deliveries retry within a bounded window; store the verified event before 2xx and deduplicate by event_id.
 - Make the handler idempotent on `Data.RequestID`: a later server release retries failed deliveries, and a retry resends identical bytes.
-- Use the History API for guaranteed reads and for the latest state: a failed delivery is not sent again, and a History row can be refined after its webhook was sent.
+- Use the History API for guaranteed reads and for the latest state: retries can exhaust, and a History row can be refined after its webhook was sent.
 - To rotate a secret without downtime, pass both secrets: `webhook.ConstructEvent(body, header, newSecret, oldSecret)`.
 
 The analytics dashboard "Test" button sends a sample `identification.scored` event with 17 of the 19 detection flags; missing flags are parsed as `false`.
@@ -369,3 +369,19 @@ Questions or issues: [contact@shieldlabs.ai](mailto:contact@shieldlabs.ai).
 ## License
 
 [MIT](./LICENSE)
+
+
+### Webhook contract 2026-10-06
+
+Current events include signed `event_id`, optional `site_id`, the complete `data.risk_events`
+catalogue (including zero-weight events), `data.fingerprint` (FP21 hardware ID distinct from
+`device_id`), and `data.hre` for sharing/takeover/travel with explicit statuses. Older envelopes
+remain supported. Only identification risk score is sent; AI bots/browser are planned only,
+and all-time entity risks are excluded.
+
+Persist the verified event in a durable inbox **before** returning 2xx and deduplicate by
+`event_id` (legacy scored bodies: `data.request_id`). Timeout/network/429/5xx retry with
+backoff in a bounded window (8 failed sends / 15-minute retry age), then DLQ. Other 4xx are
+terminal. Retried bodies and event IDs stay unchanged. `X-Shield-Event-Id` mirrors the body ID;
+trust the signed body. Signature verification remains raw-body HMAC-SHA256. Delivery is not
+exactly-once and later History corrections do not automatically create a new webhook event.

@@ -122,7 +122,7 @@ func TestConstructScoredEvent(t *testing.T) {
 	if scored.Type() != EventTypeIdentificationScored || scored.EventType != EventTypeIdentificationScored {
 		t.Errorf("type = %q", scored.Type())
 	}
-	if scored.SchemaVersion != SchemaVersion {
+	if scored.SchemaVersion != "2026-06-01" {
 		t.Errorf("schema version = %q", scored.SchemaVersion)
 	}
 	if got := scored.CreatedAt.Format(time.RFC3339Nano); got != "2026-09-30T12:34:57.482913041Z" {

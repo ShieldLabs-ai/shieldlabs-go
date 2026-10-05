@@ -25,11 +25,15 @@ var _ MappedNullable = &IdentificationScoredEvent{}
 type IdentificationScoredEvent struct {
 	// Event type. Ignore events whose type you do not know instead of failing.
 	EventType string `json:"event_type"`
-	// Version of the webhook payload contract. Every event sent today carries `2026-06-01`. Accept other values, so that a future version does not break your handler.
+	// Webhook contract version. Current release 2026-10-06; parsers also accept legacy 2026-06-01.
 	SchemaVersion string `json:"schema_version"`
-	// When the event was built. Equal to `data.observed_at`.
+	// RFC 3339 timestamp in UTC with up to 9 fractional digits (trailing zeros trimmed), for example `2026-09-30T12:34:57.482913041Z`. Parse it with a parser that accepts nanoseconds.
 	CreatedAt time.Time                `json:"created_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
 	Data      IdentificationScoredData `json:"data"`
+	// Logical site/request/final-result-version/type identity. Stable across retries and endpoints.
+	EventId *string `json:"event_id,omitempty"`
+	// Site scope when available; legacy domain-only accounts omit it.
+	SiteId *int32 `json:"site_id,omitempty"`
 }
 
 type _IdentificationScoredEvent IdentificationScoredEvent
@@ -151,6 +155,70 @@ func (o *IdentificationScoredEvent) SetData(v IdentificationScoredData) {
 	o.Data = v
 }
 
+// GetEventId returns the EventId field value if set, zero value otherwise.
+func (o *IdentificationScoredEvent) GetEventId() string {
+	if o == nil || IsNil(o.EventId) {
+		var ret string
+		return ret
+	}
+	return *o.EventId
+}
+
+// GetEventIdOk returns a tuple with the EventId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredEvent) GetEventIdOk() (*string, bool) {
+	if o == nil || IsNil(o.EventId) {
+		return nil, false
+	}
+	return o.EventId, true
+}
+
+// HasEventId returns a boolean if a field has been set.
+func (o *IdentificationScoredEvent) HasEventId() bool {
+	if o != nil && !IsNil(o.EventId) {
+		return true
+	}
+
+	return false
+}
+
+// SetEventId gets a reference to the given string and assigns it to the EventId field.
+func (o *IdentificationScoredEvent) SetEventId(v string) {
+	o.EventId = &v
+}
+
+// GetSiteId returns the SiteId field value if set, zero value otherwise.
+func (o *IdentificationScoredEvent) GetSiteId() int32 {
+	if o == nil || IsNil(o.SiteId) {
+		var ret int32
+		return ret
+	}
+	return *o.SiteId
+}
+
+// GetSiteIdOk returns a tuple with the SiteId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredEvent) GetSiteIdOk() (*int32, bool) {
+	if o == nil || IsNil(o.SiteId) {
+		return nil, false
+	}
+	return o.SiteId, true
+}
+
+// HasSiteId returns a boolean if a field has been set.
+func (o *IdentificationScoredEvent) HasSiteId() bool {
+	if o != nil && !IsNil(o.SiteId) {
+		return true
+	}
+
+	return false
+}
+
+// SetSiteId gets a reference to the given int32 and assigns it to the SiteId field.
+func (o *IdentificationScoredEvent) SetSiteId(v int32) {
+	o.SiteId = &v
+}
+
 func (o IdentificationScoredEvent) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -165,6 +233,12 @@ func (o IdentificationScoredEvent) ToMap() (map[string]interface{}, error) {
 	toSerialize["schema_version"] = o.SchemaVersion
 	toSerialize["created_at"] = o.CreatedAt
 	toSerialize["data"] = o.Data
+	if !IsNil(o.EventId) {
+		toSerialize["event_id"] = o.EventId
+	}
+	if !IsNil(o.SiteId) {
+		toSerialize["site_id"] = o.SiteId
+	}
 	return toSerialize, nil
 }
 

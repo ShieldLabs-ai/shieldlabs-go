@@ -21,7 +21,7 @@ import (
 // checks if the IdentificationScoredData type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &IdentificationScoredData{}
 
-// IdentificationScoredData The scored identification. Every key is always present (no key is ever omitted); only `user_hid` can be `null`.
+// IdentificationScoredData Final identification. risk_score is this scan only; no all-time entity risk. New extension fields are required by version 2026-10-06; legacy bodies remain accepted.
 type IdentificationScoredData struct {
 	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
 	RequestId string `json:"request_id"`
@@ -55,8 +55,14 @@ type IdentificationScoredData struct {
 	// Weighted risk signals behind `risk_score`, in scoring order. Can be empty. The rate-limit marker carries exactly one entry, `{\"name\":\"rate_limited\",\"weight\":999}`.
 	Signals        []Signal       `json:"signals"`
 	DetectionFlags DetectionFlags `json:"detection_flags"`
-	// When scoring finished and the event was built (not the page view time); identical to the envelope `created_at`. RFC 3339 in UTC with up to 9 fractional digits.
-	ObservedAt time.Time `json:"observed_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
+	// Original snapshot scan clock, distinct from envelope created_at. RFC 3339 in UTC with up to 9 fractional digits.
+	ObservedAt    time.Time `json:"observed_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
+	ResultVersion *string   `json:"result_version,omitempty"`
+	// Core build source revision; core:unversioned on local builds.
+	ScoringVersion *string      `json:"scoring_version,omitempty"`
+	RiskEvents     []RiskEvent  `json:"risk_events,omitempty"`
+	Hre            *HRE         `json:"hre,omitempty"`
+	Fingerprint    *Fingerprint `json:"fingerprint,omitempty"`
 }
 
 type _IdentificationScoredData IdentificationScoredData
@@ -530,6 +536,166 @@ func (o *IdentificationScoredData) SetObservedAt(v time.Time) {
 	o.ObservedAt = v
 }
 
+// GetResultVersion returns the ResultVersion field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetResultVersion() string {
+	if o == nil || IsNil(o.ResultVersion) {
+		var ret string
+		return ret
+	}
+	return *o.ResultVersion
+}
+
+// GetResultVersionOk returns a tuple with the ResultVersion field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetResultVersionOk() (*string, bool) {
+	if o == nil || IsNil(o.ResultVersion) {
+		return nil, false
+	}
+	return o.ResultVersion, true
+}
+
+// HasResultVersion returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasResultVersion() bool {
+	if o != nil && !IsNil(o.ResultVersion) {
+		return true
+	}
+
+	return false
+}
+
+// SetResultVersion gets a reference to the given string and assigns it to the ResultVersion field.
+func (o *IdentificationScoredData) SetResultVersion(v string) {
+	o.ResultVersion = &v
+}
+
+// GetScoringVersion returns the ScoringVersion field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetScoringVersion() string {
+	if o == nil || IsNil(o.ScoringVersion) {
+		var ret string
+		return ret
+	}
+	return *o.ScoringVersion
+}
+
+// GetScoringVersionOk returns a tuple with the ScoringVersion field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetScoringVersionOk() (*string, bool) {
+	if o == nil || IsNil(o.ScoringVersion) {
+		return nil, false
+	}
+	return o.ScoringVersion, true
+}
+
+// HasScoringVersion returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasScoringVersion() bool {
+	if o != nil && !IsNil(o.ScoringVersion) {
+		return true
+	}
+
+	return false
+}
+
+// SetScoringVersion gets a reference to the given string and assigns it to the ScoringVersion field.
+func (o *IdentificationScoredData) SetScoringVersion(v string) {
+	o.ScoringVersion = &v
+}
+
+// GetRiskEvents returns the RiskEvents field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetRiskEvents() []RiskEvent {
+	if o == nil || IsNil(o.RiskEvents) {
+		var ret []RiskEvent
+		return ret
+	}
+	return o.RiskEvents
+}
+
+// GetRiskEventsOk returns a tuple with the RiskEvents field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetRiskEventsOk() ([]RiskEvent, bool) {
+	if o == nil || IsNil(o.RiskEvents) {
+		return nil, false
+	}
+	return o.RiskEvents, true
+}
+
+// HasRiskEvents returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasRiskEvents() bool {
+	if o != nil && !IsNil(o.RiskEvents) {
+		return true
+	}
+
+	return false
+}
+
+// SetRiskEvents gets a reference to the given []RiskEvent and assigns it to the RiskEvents field.
+func (o *IdentificationScoredData) SetRiskEvents(v []RiskEvent) {
+	o.RiskEvents = v
+}
+
+// GetHre returns the Hre field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetHre() HRE {
+	if o == nil || IsNil(o.Hre) {
+		var ret HRE
+		return ret
+	}
+	return *o.Hre
+}
+
+// GetHreOk returns a tuple with the Hre field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetHreOk() (*HRE, bool) {
+	if o == nil || IsNil(o.Hre) {
+		return nil, false
+	}
+	return o.Hre, true
+}
+
+// HasHre returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasHre() bool {
+	if o != nil && !IsNil(o.Hre) {
+		return true
+	}
+
+	return false
+}
+
+// SetHre gets a reference to the given HRE and assigns it to the Hre field.
+func (o *IdentificationScoredData) SetHre(v HRE) {
+	o.Hre = &v
+}
+
+// GetFingerprint returns the Fingerprint field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetFingerprint() Fingerprint {
+	if o == nil || IsNil(o.Fingerprint) {
+		var ret Fingerprint
+		return ret
+	}
+	return *o.Fingerprint
+}
+
+// GetFingerprintOk returns a tuple with the Fingerprint field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetFingerprintOk() (*Fingerprint, bool) {
+	if o == nil || IsNil(o.Fingerprint) {
+		return nil, false
+	}
+	return o.Fingerprint, true
+}
+
+// HasFingerprint returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasFingerprint() bool {
+	if o != nil && !IsNil(o.Fingerprint) {
+		return true
+	}
+
+	return false
+}
+
+// SetFingerprint gets a reference to the given Fingerprint and assigns it to the Fingerprint field.
+func (o *IdentificationScoredData) SetFingerprint(v Fingerprint) {
+	o.Fingerprint = &v
+}
+
 func (o IdentificationScoredData) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -558,6 +724,21 @@ func (o IdentificationScoredData) ToMap() (map[string]interface{}, error) {
 	toSerialize["signals"] = o.Signals
 	toSerialize["detection_flags"] = o.DetectionFlags
 	toSerialize["observed_at"] = o.ObservedAt
+	if !IsNil(o.ResultVersion) {
+		toSerialize["result_version"] = o.ResultVersion
+	}
+	if !IsNil(o.ScoringVersion) {
+		toSerialize["scoring_version"] = o.ScoringVersion
+	}
+	if !IsNil(o.RiskEvents) {
+		toSerialize["risk_events"] = o.RiskEvents
+	}
+	if !IsNil(o.Hre) {
+		toSerialize["hre"] = o.Hre
+	}
+	if !IsNil(o.Fingerprint) {
+		toSerialize["fingerprint"] = o.Fingerprint
+	}
 	return toSerialize, nil
 }
 

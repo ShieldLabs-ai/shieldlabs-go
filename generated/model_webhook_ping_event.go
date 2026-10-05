@@ -25,10 +25,11 @@ var _ MappedNullable = &WebhookPingEvent{}
 type WebhookPingEvent struct {
 	// Event type.
 	EventType string `json:"event_type"`
-	// Version of the webhook payload contract. Every event sent today carries `2026-06-01`. Accept other values, so that a future version does not break your handler.
+	// Webhook contract version. Current release 2026-10-06; parsers also accept legacy 2026-06-01.
 	SchemaVersion string `json:"schema_version"`
 	// When the ping was sent, with second precision.
 	CreatedAt time.Time `json:"created_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
+	EventId   *string   `json:"event_id,omitempty"`
 }
 
 type _WebhookPingEvent WebhookPingEvent
@@ -125,6 +126,38 @@ func (o *WebhookPingEvent) SetCreatedAt(v time.Time) {
 	o.CreatedAt = v
 }
 
+// GetEventId returns the EventId field value if set, zero value otherwise.
+func (o *WebhookPingEvent) GetEventId() string {
+	if o == nil || IsNil(o.EventId) {
+		var ret string
+		return ret
+	}
+	return *o.EventId
+}
+
+// GetEventIdOk returns a tuple with the EventId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *WebhookPingEvent) GetEventIdOk() (*string, bool) {
+	if o == nil || IsNil(o.EventId) {
+		return nil, false
+	}
+	return o.EventId, true
+}
+
+// HasEventId returns a boolean if a field has been set.
+func (o *WebhookPingEvent) HasEventId() bool {
+	if o != nil && !IsNil(o.EventId) {
+		return true
+	}
+
+	return false
+}
+
+// SetEventId gets a reference to the given string and assigns it to the EventId field.
+func (o *WebhookPingEvent) SetEventId(v string) {
+	o.EventId = &v
+}
+
 func (o WebhookPingEvent) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -138,6 +171,9 @@ func (o WebhookPingEvent) ToMap() (map[string]interface{}, error) {
 	toSerialize["event_type"] = o.EventType
 	toSerialize["schema_version"] = o.SchemaVersion
 	toSerialize["created_at"] = o.CreatedAt
+	if !IsNil(o.EventId) {
+		toSerialize["event_id"] = o.EventId
+	}
 	return toSerialize, nil
 }
 

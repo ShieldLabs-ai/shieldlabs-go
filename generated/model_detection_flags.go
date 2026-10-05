@@ -20,7 +20,7 @@ import (
 // checks if the DetectionFlags type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &DetectionFlags{}
 
-// DetectionFlags Stable yes/no verdicts for the identification. Always all 19 keys. Branch on these flags and on the Risk Score; signal names are for display and logging.  When `search_bot` is `true`, `incognito`, `check_incomplete`, `ip_mismatch` and `javascript_disabled` are always `false`.
+// DetectionFlags Stable yes/no verdicts for the identification. Legacy 19 keys are always present; the four extension flags are present in schema 2026-10-06. Branch on these flags and on the Risk Score; signal names are for display and logging.  When `search_bot` is `true`, `incognito`, `check_incomplete`, `ip_mismatch` and `javascript_disabled` are always `false`.
 type DetectionFlags struct {
 	// A VPN was detected (scored `vpn` signal).
 	Vpn bool `json:"vpn"`
@@ -59,7 +59,11 @@ type DetectionFlags struct {
 	// The browser network (STUN) check did not complete. Cleared again when a late network result arrives.
 	StunNotChecked bool `json:"stun_not_checked"`
 	// Part of the browser checks timed out, so the verdict rests on partial data. Informational.
-	CheckIncomplete bool `json:"check_incomplete"`
+	CheckIncomplete bool  `json:"check_incomplete"`
+	OsMismatch2     *bool `json:"os_mismatch2,omitempty"`
+	DeviceSpoofing  *bool `json:"device_spoofing,omitempty"`
+	LatencyTest     *bool `json:"latency_test,omitempty"`
+	BannedIp        *bool `json:"banned_ip,omitempty"`
 }
 
 type _DetectionFlags DetectionFlags
@@ -556,6 +560,134 @@ func (o *DetectionFlags) SetCheckIncomplete(v bool) {
 	o.CheckIncomplete = v
 }
 
+// GetOsMismatch2 returns the OsMismatch2 field value if set, zero value otherwise.
+func (o *DetectionFlags) GetOsMismatch2() bool {
+	if o == nil || IsNil(o.OsMismatch2) {
+		var ret bool
+		return ret
+	}
+	return *o.OsMismatch2
+}
+
+// GetOsMismatch2Ok returns a tuple with the OsMismatch2 field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetOsMismatch2Ok() (*bool, bool) {
+	if o == nil || IsNil(o.OsMismatch2) {
+		return nil, false
+	}
+	return o.OsMismatch2, true
+}
+
+// HasOsMismatch2 returns a boolean if a field has been set.
+func (o *DetectionFlags) HasOsMismatch2() bool {
+	if o != nil && !IsNil(o.OsMismatch2) {
+		return true
+	}
+
+	return false
+}
+
+// SetOsMismatch2 gets a reference to the given bool and assigns it to the OsMismatch2 field.
+func (o *DetectionFlags) SetOsMismatch2(v bool) {
+	o.OsMismatch2 = &v
+}
+
+// GetDeviceSpoofing returns the DeviceSpoofing field value if set, zero value otherwise.
+func (o *DetectionFlags) GetDeviceSpoofing() bool {
+	if o == nil || IsNil(o.DeviceSpoofing) {
+		var ret bool
+		return ret
+	}
+	return *o.DeviceSpoofing
+}
+
+// GetDeviceSpoofingOk returns a tuple with the DeviceSpoofing field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetDeviceSpoofingOk() (*bool, bool) {
+	if o == nil || IsNil(o.DeviceSpoofing) {
+		return nil, false
+	}
+	return o.DeviceSpoofing, true
+}
+
+// HasDeviceSpoofing returns a boolean if a field has been set.
+func (o *DetectionFlags) HasDeviceSpoofing() bool {
+	if o != nil && !IsNil(o.DeviceSpoofing) {
+		return true
+	}
+
+	return false
+}
+
+// SetDeviceSpoofing gets a reference to the given bool and assigns it to the DeviceSpoofing field.
+func (o *DetectionFlags) SetDeviceSpoofing(v bool) {
+	o.DeviceSpoofing = &v
+}
+
+// GetLatencyTest returns the LatencyTest field value if set, zero value otherwise.
+func (o *DetectionFlags) GetLatencyTest() bool {
+	if o == nil || IsNil(o.LatencyTest) {
+		var ret bool
+		return ret
+	}
+	return *o.LatencyTest
+}
+
+// GetLatencyTestOk returns a tuple with the LatencyTest field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetLatencyTestOk() (*bool, bool) {
+	if o == nil || IsNil(o.LatencyTest) {
+		return nil, false
+	}
+	return o.LatencyTest, true
+}
+
+// HasLatencyTest returns a boolean if a field has been set.
+func (o *DetectionFlags) HasLatencyTest() bool {
+	if o != nil && !IsNil(o.LatencyTest) {
+		return true
+	}
+
+	return false
+}
+
+// SetLatencyTest gets a reference to the given bool and assigns it to the LatencyTest field.
+func (o *DetectionFlags) SetLatencyTest(v bool) {
+	o.LatencyTest = &v
+}
+
+// GetBannedIp returns the BannedIp field value if set, zero value otherwise.
+func (o *DetectionFlags) GetBannedIp() bool {
+	if o == nil || IsNil(o.BannedIp) {
+		var ret bool
+		return ret
+	}
+	return *o.BannedIp
+}
+
+// GetBannedIpOk returns a tuple with the BannedIp field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetBannedIpOk() (*bool, bool) {
+	if o == nil || IsNil(o.BannedIp) {
+		return nil, false
+	}
+	return o.BannedIp, true
+}
+
+// HasBannedIp returns a boolean if a field has been set.
+func (o *DetectionFlags) HasBannedIp() bool {
+	if o != nil && !IsNil(o.BannedIp) {
+		return true
+	}
+
+	return false
+}
+
+// SetBannedIp gets a reference to the given bool and assigns it to the BannedIp field.
+func (o *DetectionFlags) SetBannedIp(v bool) {
+	o.BannedIp = &v
+}
+
 func (o DetectionFlags) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -585,6 +717,18 @@ func (o DetectionFlags) ToMap() (map[string]interface{}, error) {
 	toSerialize["javascript_disabled"] = o.JavascriptDisabled
 	toSerialize["stun_not_checked"] = o.StunNotChecked
 	toSerialize["check_incomplete"] = o.CheckIncomplete
+	if !IsNil(o.OsMismatch2) {
+		toSerialize["os_mismatch2"] = o.OsMismatch2
+	}
+	if !IsNil(o.DeviceSpoofing) {
+		toSerialize["device_spoofing"] = o.DeviceSpoofing
+	}
+	if !IsNil(o.LatencyTest) {
+		toSerialize["latency_test"] = o.LatencyTest
+	}
+	if !IsNil(o.BannedIp) {
+		toSerialize["banned_ip"] = o.BannedIp
+	}
 	return toSerialize, nil
 }
 

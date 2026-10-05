@@ -68,9 +68,8 @@ type app struct {
 
 	// usedRequestIDs makes one identification authorize one signup attempt.
 	usedRequestIDs *recentSet
-	// deliveries makes the webhook handler idempotent on the request ID. Today
-	// each identification is delivered once (1-second timeout, no retries); a
-	// later server release retries failed deliveries with identical bytes.
+	// deliveries is demo-only in-memory dedup by event ID (legacy: request ID).
+	// Production needs a durable inbox before 2xx; retries resend identical bytes.
 	deliveries *recentSet
 }
 
@@ -158,7 +157,8 @@ func (a *app) webhook(w http.ResponseWriter, r *http.Request) {
 
 	switch e := event.(type) {
 	case *webhook.IdentificationScoredEvent:
-		if a.deliveries.seenBefore(e.Data.RequestID) {
+		deliveryID:=e.EventID; if deliveryID=="" {deliveryID=e.Data.RequestID}
+		if a.deliveries.seenBefore(deliveryID) {
 			log.Printf("webhook: request %s already handled", e.Data.RequestID)
 			break
 		}
