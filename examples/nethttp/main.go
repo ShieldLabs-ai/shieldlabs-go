@@ -157,7 +157,10 @@ func (a *app) webhook(w http.ResponseWriter, r *http.Request) {
 
 	switch e := event.(type) {
 	case *webhook.IdentificationScoredEvent:
-		deliveryID:=e.EventID; if deliveryID=="" {deliveryID=e.Data.RequestID}
+		deliveryID := e.EventID
+		if deliveryID == "" {
+			deliveryID = e.Data.RequestID
+		}
 		if a.deliveries.seenBefore(deliveryID) {
 			log.Printf("webhook: request %s already handled", e.Data.RequestID)
 			break
