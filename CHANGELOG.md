@@ -4,11 +4,13 @@ All notable changes to this module are documented in this file. The format is ba
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this module follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] - 2026-10-05
 
 ### Added
 
-- `sync.sh` downloads the OpenAPI description and `generate.sh` rebuilds `generated/` from it. The supported client is unchanged.
+- `sync.sh` downloads the OpenAPI description and `generate.sh` rebuilds the reference client and the typed wire views consumed by the supported SDK.
+- History request parameters, profile headers and History/profile/webhook normalization now consume schema-derived types. Public types, raw payloads and tolerant normalization remain compatible.
+- Deterministic generation checks, incompatible schema mutation checks and an isolated module-archive consumer check.
 
 ## [1.0.0] - 2026-09-30
 

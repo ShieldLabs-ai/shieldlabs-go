@@ -6,7 +6,7 @@ import (
 )
 
 // Version is the version of this module.
-const Version = "1.0.0"
+const Version = "1.0.1"
 
 const (
 	// DefaultBaseURL is the origin of the History API. Request paths start

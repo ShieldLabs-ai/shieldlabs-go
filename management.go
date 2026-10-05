@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ShieldLabs-ai/shieldlabs-go/internal/contract"
 	"github.com/ShieldLabs-ai/shieldlabs-go/internal/wire"
 )
 
@@ -81,7 +82,10 @@ func NewManagementClient(secretKey, domain string, opts ...Option) (*ManagementC
 	}
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+secret)
-	header.Set("X-Shield-Domain", d)
+	request := contract.GetDomainProfileRequest{XShieldDomain: d}
+	for name, values := range request.Headers() {
+		header[name] = values
+	}
 	return &ManagementClient{t: newTransport(base, cfg, header)}, nil
 }
 
@@ -90,7 +94,7 @@ func NewManagementClient(secretKey, domain string, opts ...Option) (*ManagementC
 // wrong secret or domain with [ErrAuthentication] and the per-IP limit with
 // [ErrRateLimited].
 func (m *ManagementClient) GetProfile(ctx context.Context) (*DomainProfile, error) {
-	resp, err := m.t.get(ctx, apiRequest{path: "/v1/profile", retry429: false})
+	resp, err := m.t.get(ctx, apiRequest{path: (contract.GetDomainProfileRequest{}).Path(escapePathValue), retry429: false})
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +107,13 @@ func (m *ManagementClient) GetProfile(ctx context.Context) (*DomainProfile, erro
 			Header:     resp.header,
 		}
 	}
-	createdAt, _ := wire.ParseRFC3339(str(body["CreatedAt"]))
+	var profile contract.GetDomainProfileBody = contract.ReadDomainProfile(body)
+	createdAt, _ := wire.ParseRFC3339(stringField(profile.CreatedAt()))
 	return &DomainProfile{
-		Domain:                   str(body["Domain"]),
-		RemainingIdentifications: toInt64(body["Weight"]),
-		PublicKeyMasked:          str(body["PublicKey"]),
-		SecretKeyMasked:          str(body["Secret"]),
+		Domain:                   stringField(profile.Domain()),
+		RemainingIdentifications: integer64Field(profile.Weight()),
+		PublicKeyMasked:          stringField(profile.PublicKey()),
+		SecretKeyMasked:          stringField(profile.Secret()),
 		CreatedAt:                createdAt,
 		Raw:                      body,
 	}, nil
