@@ -121,6 +121,7 @@ func identificationFromHistoryRow(row map[string]any) *Identification {
 		ObservedAt:     observedAt,
 		Source:         SourceHistory,
 		Raw:            row,
+		ClientIdentity: parseClientIdentity(row["client_identity"]),
 	}
 }
 
@@ -216,6 +217,7 @@ func identificationFromWebhookData(data map[string]any) *Identification {
 		ObservedAt:     observedAt,
 		Source:         SourceWebhook,
 		Raw:            data,
+		ClientIdentity: parseClientIdentity(data["client_identity"]),
 	}
 }
 
