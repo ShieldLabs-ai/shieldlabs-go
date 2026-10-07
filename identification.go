@@ -10,6 +10,7 @@ import "time"
 // Every field is always set. Unknown values (a new connection type, a new
 // risk signal) are kept as they arrive.
 type Identification struct {
+	WebhookExtension
 	// RequestID is the UUID the browser agent returned for this
 	// identification. Use it to join the browser call, the webhook and the
 	// History row, and to make sure one identification authorizes only one
@@ -205,6 +206,12 @@ type Signal struct {
 // DetectionFlags holds the 19 stable detection booleans of an
 // identification. Flags missing from a delivery are false.
 type DetectionFlags struct {
+	AIBot               bool `json:"ai_bot,omitempty"`
+	AIBrowser           bool `json:"ai_browser,omitempty"`
+	OSMismatch2         bool `json:"os_mismatch2,omitempty"`
+	DeviceSpoofing      bool `json:"device_spoofing,omitempty"`
+	LatencyTest         bool `json:"latency_test,omitempty"`
+	BannedIP            bool `json:"banned_ip,omitempty"`
 	VPN                 bool `json:"vpn"`
 	PrivacyRelay        bool `json:"privacy_relay"`
 	BrowserVPNProxy     bool `json:"browser_vpn_proxy"`
@@ -265,6 +272,18 @@ func DetectionFlagNames() []string {
 // field returns a pointer to the flag with the given wire name, or nil.
 func (f *DetectionFlags) field(name string) *bool {
 	switch name {
+	case "ai_bot":
+		return &f.AIBot
+	case "ai_browser":
+		return &f.AIBrowser
+	case "os_mismatch2":
+		return &f.OSMismatch2
+	case "device_spoofing":
+		return &f.DeviceSpoofing
+	case "latency_test":
+		return &f.LatencyTest
+	case "banned_ip":
+		return &f.BannedIP
 	case FlagVPN:
 		return &f.VPN
 	case FlagPrivacyRelay:

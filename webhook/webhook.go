@@ -8,15 +8,11 @@
 // message is the raw request body exactly as received. Always verify the raw
 // bytes: parsing and re-encoding the JSON changes them.
 //
-// Deliveries carry no timestamp, delivery ID or event type header. Today
-// ShieldLabs sends one delivery per identification and endpoint, with a
-// 1-second timeout and no retries: answer with a 2xx status within one second
-// and do slow work afterwards. A later server release retries failed
-// deliveries, and a retry resends identical bytes, so make your handler
-// idempotent on the identification's request ID (Data.RequestID). Use the
-// History API for guaranteed reads and for the latest state of an
-// identification: a failed delivery is not sent again, and a History row can
-// be refined after its webhook was sent.
+// Version 2026-10-07 carries a signed event_id in the body and an
+// X-Shield-Event-Id header. Failed deliveries are retried within a bounded
+// retry window. Deduplicate by EventID, persist the event before replying
+// with 2xx, and process asynchronously. Legacy events without EventID may
+// fall back to Data.RequestID. Use History for latest state/recovery.
 package webhook
 
 import (
@@ -48,7 +44,7 @@ const (
 
 // SchemaVersion is the schema version of the events this package was built
 // for. Deliveries with other schema versions are accepted.
-const SchemaVersion = "2026-06-01"
+const SchemaVersion = "2026-10-07"
 
 var (
 	// ErrSignature reports a missing, malformed or non-matching signature,
@@ -128,6 +124,8 @@ type Event interface {
 
 // Envelope holds the fields every event has.
 type Envelope struct {
+	EventID string `json:"event_id,omitempty"`
+	SiteID  int64  `json:"site_id,omitempty"`
 	// EventType is the event type, for example "identification.scored".
 	EventType string `json:"event_type"`
 	// SchemaVersion is the event schema version, currently "2026-06-01".
@@ -194,6 +192,8 @@ func parseEvent(payload []byte) (Event, error) {
 	}
 	env := Envelope{EventType: eventType, Raw: raw}
 	env.SchemaVersion, _ = raw["schema_version"].(string)
+	env.EventID, _ = raw["event_id"].(string)
+	_ = json.Unmarshal(fields["site_id"], &env.SiteID)
 	if createdAt, ok := raw["created_at"].(string); ok {
 		env.CreatedAt, _ = wire.ParseRFC3339(createdAt)
 	}

@@ -20,7 +20,7 @@ import (
 // checks if the DetectionFlags type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &DetectionFlags{}
 
-// DetectionFlags Stable yes/no verdicts for the identification. Always all 19 keys. Branch on these flags and on the Risk Score; signal names are for display and logging.  When `search_bot` is `true`, `incognito`, `check_incomplete`, `ip_mismatch` and `javascript_disabled` are always `false`.
+// DetectionFlags Stable yes/no verdicts for the identification. Legacy 19 keys are always present; the extension flags depend on the scoring release. Task 204 adds optional ai_bot and ai_browser flags; older payloads omit them. Branch on these flags and on the Risk Score; signal names are for display and logging.  When `search_bot` is `true`, `incognito`, `check_incomplete`, `ip_mismatch` and `javascript_disabled` are always `false`.
 type DetectionFlags struct {
 	// A VPN was detected (scored `vpn` signal).
 	Vpn bool `json:"vpn"`
@@ -36,7 +36,7 @@ type DetectionFlags struct {
 	DatacenterIp bool `json:"datacenter_ip"`
 	// The public IP has a record of abuse in IP intelligence.
 	Abuser bool `json:"abuser"`
-	// The operating system seen on the network differs from the one the browser reports.
+	// Either internal OS consistency check detected a mismatch. The public flag combines browser/network and TCP behaviour checks.
 	OsMismatch bool `json:"os_mismatch"`
 	// The operating system could not be determined from the User-Agent or the network.
 	OsNotDetected bool `json:"os_not_detected"`
@@ -44,7 +44,7 @@ type DetectionFlags struct {
 	TimezoneMismatch bool `json:"timezone_mismatch"`
 	// An anti-detect browser was detected.
 	AntiDetectBrowser bool `json:"anti_detect_browser"`
-	// Browser automation was detected, for example a WebDriver-controlled browser.
+	// Browser automation was detected, for example a WebDriver-controlled browser. Catalogue weight is 90 for task 204 scoring releases; historical result versions may retain the earlier weight 60.
 	BrowserAutomation bool `json:"browser_automation"`
 	// The public IP differs from the local IP found by the browser network check. Informational: it does not add to the score.
 	IpMismatch bool `json:"ip_mismatch"`
@@ -59,7 +59,17 @@ type DetectionFlags struct {
 	// The browser network (STUN) check did not complete. Cleared again when a late network result arrives.
 	StunNotChecked bool `json:"stun_not_checked"`
 	// Part of the browser checks timed out, so the verdict rests on partial data. Informational.
-	CheckIncomplete bool `json:"check_incomplete"`
+	CheckIncomplete bool  `json:"check_incomplete"`
+	DeviceSpoofing  *bool `json:"device_spoofing,omitempty"`
+	LatencyTest     *bool `json:"latency_test,omitempty"`
+	BannedIp        *bool `json:"banned_ip,omitempty"`
+	// An accepted bot is classified as AI training or user-requested fetch. ChatGPT-User, Claude-User and Perplexity-User are AI bots, not AI browsers. Weight 0. The flag is optional on older payloads; its absence is not an evaluated negative result. Provider claims alone do not grant zero risk.
+	AiBot *bool `json:"ai_bot,omitempty"`
+	// A browser is identified by separate verified browser infrastructure. A generic browser User-Agent or a verified provider alone is insufficient. Weight 0. Optional on older payloads; absence is not an evaluated negative.
+	AiBrowser *bool `json:"ai_browser,omitempty"`
+	// Legacy 2026-10-06 only; current payloads combine this check into os_mismatch.
+	// Deprecated
+	OsMismatch2 *bool `json:"os_mismatch2,omitempty"`
 }
 
 type _DetectionFlags DetectionFlags
@@ -556,6 +566,201 @@ func (o *DetectionFlags) SetCheckIncomplete(v bool) {
 	o.CheckIncomplete = v
 }
 
+// GetDeviceSpoofing returns the DeviceSpoofing field value if set, zero value otherwise.
+func (o *DetectionFlags) GetDeviceSpoofing() bool {
+	if o == nil || IsNil(o.DeviceSpoofing) {
+		var ret bool
+		return ret
+	}
+	return *o.DeviceSpoofing
+}
+
+// GetDeviceSpoofingOk returns a tuple with the DeviceSpoofing field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetDeviceSpoofingOk() (*bool, bool) {
+	if o == nil || IsNil(o.DeviceSpoofing) {
+		return nil, false
+	}
+	return o.DeviceSpoofing, true
+}
+
+// HasDeviceSpoofing returns a boolean if a field has been set.
+func (o *DetectionFlags) HasDeviceSpoofing() bool {
+	if o != nil && !IsNil(o.DeviceSpoofing) {
+		return true
+	}
+
+	return false
+}
+
+// SetDeviceSpoofing gets a reference to the given bool and assigns it to the DeviceSpoofing field.
+func (o *DetectionFlags) SetDeviceSpoofing(v bool) {
+	o.DeviceSpoofing = &v
+}
+
+// GetLatencyTest returns the LatencyTest field value if set, zero value otherwise.
+func (o *DetectionFlags) GetLatencyTest() bool {
+	if o == nil || IsNil(o.LatencyTest) {
+		var ret bool
+		return ret
+	}
+	return *o.LatencyTest
+}
+
+// GetLatencyTestOk returns a tuple with the LatencyTest field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetLatencyTestOk() (*bool, bool) {
+	if o == nil || IsNil(o.LatencyTest) {
+		return nil, false
+	}
+	return o.LatencyTest, true
+}
+
+// HasLatencyTest returns a boolean if a field has been set.
+func (o *DetectionFlags) HasLatencyTest() bool {
+	if o != nil && !IsNil(o.LatencyTest) {
+		return true
+	}
+
+	return false
+}
+
+// SetLatencyTest gets a reference to the given bool and assigns it to the LatencyTest field.
+func (o *DetectionFlags) SetLatencyTest(v bool) {
+	o.LatencyTest = &v
+}
+
+// GetBannedIp returns the BannedIp field value if set, zero value otherwise.
+func (o *DetectionFlags) GetBannedIp() bool {
+	if o == nil || IsNil(o.BannedIp) {
+		var ret bool
+		return ret
+	}
+	return *o.BannedIp
+}
+
+// GetBannedIpOk returns a tuple with the BannedIp field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetBannedIpOk() (*bool, bool) {
+	if o == nil || IsNil(o.BannedIp) {
+		return nil, false
+	}
+	return o.BannedIp, true
+}
+
+// HasBannedIp returns a boolean if a field has been set.
+func (o *DetectionFlags) HasBannedIp() bool {
+	if o != nil && !IsNil(o.BannedIp) {
+		return true
+	}
+
+	return false
+}
+
+// SetBannedIp gets a reference to the given bool and assigns it to the BannedIp field.
+func (o *DetectionFlags) SetBannedIp(v bool) {
+	o.BannedIp = &v
+}
+
+// GetAiBot returns the AiBot field value if set, zero value otherwise.
+func (o *DetectionFlags) GetAiBot() bool {
+	if o == nil || IsNil(o.AiBot) {
+		var ret bool
+		return ret
+	}
+	return *o.AiBot
+}
+
+// GetAiBotOk returns a tuple with the AiBot field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetAiBotOk() (*bool, bool) {
+	if o == nil || IsNil(o.AiBot) {
+		return nil, false
+	}
+	return o.AiBot, true
+}
+
+// HasAiBot returns a boolean if a field has been set.
+func (o *DetectionFlags) HasAiBot() bool {
+	if o != nil && !IsNil(o.AiBot) {
+		return true
+	}
+
+	return false
+}
+
+// SetAiBot gets a reference to the given bool and assigns it to the AiBot field.
+func (o *DetectionFlags) SetAiBot(v bool) {
+	o.AiBot = &v
+}
+
+// GetAiBrowser returns the AiBrowser field value if set, zero value otherwise.
+func (o *DetectionFlags) GetAiBrowser() bool {
+	if o == nil || IsNil(o.AiBrowser) {
+		var ret bool
+		return ret
+	}
+	return *o.AiBrowser
+}
+
+// GetAiBrowserOk returns a tuple with the AiBrowser field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetAiBrowserOk() (*bool, bool) {
+	if o == nil || IsNil(o.AiBrowser) {
+		return nil, false
+	}
+	return o.AiBrowser, true
+}
+
+// HasAiBrowser returns a boolean if a field has been set.
+func (o *DetectionFlags) HasAiBrowser() bool {
+	if o != nil && !IsNil(o.AiBrowser) {
+		return true
+	}
+
+	return false
+}
+
+// SetAiBrowser gets a reference to the given bool and assigns it to the AiBrowser field.
+func (o *DetectionFlags) SetAiBrowser(v bool) {
+	o.AiBrowser = &v
+}
+
+// GetOsMismatch2 returns the OsMismatch2 field value if set, zero value otherwise.
+// Deprecated
+func (o *DetectionFlags) GetOsMismatch2() bool {
+	if o == nil || IsNil(o.OsMismatch2) {
+		var ret bool
+		return ret
+	}
+	return *o.OsMismatch2
+}
+
+// GetOsMismatch2Ok returns a tuple with the OsMismatch2 field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// Deprecated
+func (o *DetectionFlags) GetOsMismatch2Ok() (*bool, bool) {
+	if o == nil || IsNil(o.OsMismatch2) {
+		return nil, false
+	}
+	return o.OsMismatch2, true
+}
+
+// HasOsMismatch2 returns a boolean if a field has been set.
+func (o *DetectionFlags) HasOsMismatch2() bool {
+	if o != nil && !IsNil(o.OsMismatch2) {
+		return true
+	}
+
+	return false
+}
+
+// SetOsMismatch2 gets a reference to the given bool and assigns it to the OsMismatch2 field.
+// Deprecated
+func (o *DetectionFlags) SetOsMismatch2(v bool) {
+	o.OsMismatch2 = &v
+}
+
 func (o DetectionFlags) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -585,6 +790,24 @@ func (o DetectionFlags) ToMap() (map[string]interface{}, error) {
 	toSerialize["javascript_disabled"] = o.JavascriptDisabled
 	toSerialize["stun_not_checked"] = o.StunNotChecked
 	toSerialize["check_incomplete"] = o.CheckIncomplete
+	if !IsNil(o.DeviceSpoofing) {
+		toSerialize["device_spoofing"] = o.DeviceSpoofing
+	}
+	if !IsNil(o.LatencyTest) {
+		toSerialize["latency_test"] = o.LatencyTest
+	}
+	if !IsNil(o.BannedIp) {
+		toSerialize["banned_ip"] = o.BannedIp
+	}
+	if !IsNil(o.AiBot) {
+		toSerialize["ai_bot"] = o.AiBot
+	}
+	if !IsNil(o.AiBrowser) {
+		toSerialize["ai_browser"] = o.AiBrowser
+	}
+	if !IsNil(o.OsMismatch2) {
+		toSerialize["os_mismatch2"] = o.OsMismatch2
+	}
 	return toSerialize, nil
 }
 

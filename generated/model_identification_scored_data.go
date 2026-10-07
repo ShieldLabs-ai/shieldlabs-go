@@ -21,8 +21,9 @@ import (
 // checks if the IdentificationScoredData type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &IdentificationScoredData{}
 
-// IdentificationScoredData The scored identification. Every key is always present (no key is ever omitted); only `user_hid` can be `null`.
+// IdentificationScoredData Final identification. risk_score is this scan only. Version 2026-10-07 uses signals for score contributions, detection_flags for final decisions, and hre for account results. Older bodies remain accepted.
 type IdentificationScoredData struct {
+	ClientIdentity *ClientIdentity `json:"client_identity,omitempty"`
 	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
 	RequestId string `json:"request_id"`
 	// Server-side visitor identifier (UUID v5). It is sticky to the device: a new cookie on a known device keeps the existing visitor ID, so clearing cookies usually does not change it. The nil UUID appears on identifications without usable device data, such as rate-limit marker rows.
@@ -55,8 +56,21 @@ type IdentificationScoredData struct {
 	// Weighted risk signals behind `risk_score`, in scoring order. Can be empty. The rate-limit marker carries exactly one entry, `{\"name\":\"rate_limited\",\"weight\":999}`.
 	Signals        []Signal       `json:"signals"`
 	DetectionFlags DetectionFlags `json:"detection_flags"`
-	// When scoring finished and the event was built (not the page view time); identical to the envelope `created_at`. RFC 3339 in UTC with up to 9 fractional digits.
-	ObservedAt time.Time `json:"observed_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
+	// Original snapshot scan clock, distinct from envelope created_at. RFC 3339 in UTC with up to 9 fractional digits.
+	ObservedAt    time.Time `json:"observed_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
+	ResultVersion *string   `json:"result_version,omitempty"`
+	// Core build source revision; core:unversioned on local builds.
+	ScoringVersion *string `json:"scoring_version,omitempty"`
+	// Legacy 2026-10-06 only; absent from current scored events.
+	// Deprecated
+	RiskEvents []RiskEvent `json:"risk_events,omitempty"`
+	Hre        *HRE        `json:"hre,omitempty"`
+	// Owner label from accepted search-bot detection; omitted when unknown or inactive.
+	SearchBotOwner *string `json:"search_bot_owner,omitempty"`
+	// Provider company label from accepted AI-bot detection; omitted when unknown or inactive.
+	AiBotOwner *string `json:"ai_bot_owner,omitempty"`
+	// Owner label from accepted AI-browser detection; omitted when unknown or inactive.
+	AiBrowserOwner *string `json:"ai_browser_owner,omitempty"`
 }
 
 type _IdentificationScoredData IdentificationScoredData
@@ -94,6 +108,38 @@ func NewIdentificationScoredData(requestId string, visitorId string, deviceId st
 func NewIdentificationScoredDataWithDefaults() *IdentificationScoredData {
 	this := IdentificationScoredData{}
 	return &this
+}
+
+// GetClientIdentity returns the ClientIdentity field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetClientIdentity() ClientIdentity {
+	if o == nil || IsNil(o.ClientIdentity) {
+		var ret ClientIdentity
+		return ret
+	}
+	return *o.ClientIdentity
+}
+
+// GetClientIdentityOk returns a tuple with the ClientIdentity field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetClientIdentityOk() (*ClientIdentity, bool) {
+	if o == nil || IsNil(o.ClientIdentity) {
+		return nil, false
+	}
+	return o.ClientIdentity, true
+}
+
+// HasClientIdentity returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasClientIdentity() bool {
+	if o != nil && !IsNil(o.ClientIdentity) {
+		return true
+	}
+
+	return false
+}
+
+// SetClientIdentity gets a reference to the given ClientIdentity and assigns it to the ClientIdentity field.
+func (o *IdentificationScoredData) SetClientIdentity(v ClientIdentity) {
+	o.ClientIdentity = &v
 }
 
 // GetRequestId returns the RequestId field value
@@ -530,6 +576,233 @@ func (o *IdentificationScoredData) SetObservedAt(v time.Time) {
 	o.ObservedAt = v
 }
 
+// GetResultVersion returns the ResultVersion field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetResultVersion() string {
+	if o == nil || IsNil(o.ResultVersion) {
+		var ret string
+		return ret
+	}
+	return *o.ResultVersion
+}
+
+// GetResultVersionOk returns a tuple with the ResultVersion field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetResultVersionOk() (*string, bool) {
+	if o == nil || IsNil(o.ResultVersion) {
+		return nil, false
+	}
+	return o.ResultVersion, true
+}
+
+// HasResultVersion returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasResultVersion() bool {
+	if o != nil && !IsNil(o.ResultVersion) {
+		return true
+	}
+
+	return false
+}
+
+// SetResultVersion gets a reference to the given string and assigns it to the ResultVersion field.
+func (o *IdentificationScoredData) SetResultVersion(v string) {
+	o.ResultVersion = &v
+}
+
+// GetScoringVersion returns the ScoringVersion field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetScoringVersion() string {
+	if o == nil || IsNil(o.ScoringVersion) {
+		var ret string
+		return ret
+	}
+	return *o.ScoringVersion
+}
+
+// GetScoringVersionOk returns a tuple with the ScoringVersion field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetScoringVersionOk() (*string, bool) {
+	if o == nil || IsNil(o.ScoringVersion) {
+		return nil, false
+	}
+	return o.ScoringVersion, true
+}
+
+// HasScoringVersion returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasScoringVersion() bool {
+	if o != nil && !IsNil(o.ScoringVersion) {
+		return true
+	}
+
+	return false
+}
+
+// SetScoringVersion gets a reference to the given string and assigns it to the ScoringVersion field.
+func (o *IdentificationScoredData) SetScoringVersion(v string) {
+	o.ScoringVersion = &v
+}
+
+// GetRiskEvents returns the RiskEvents field value if set, zero value otherwise.
+// Deprecated
+func (o *IdentificationScoredData) GetRiskEvents() []RiskEvent {
+	if o == nil || IsNil(o.RiskEvents) {
+		var ret []RiskEvent
+		return ret
+	}
+	return o.RiskEvents
+}
+
+// GetRiskEventsOk returns a tuple with the RiskEvents field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// Deprecated
+func (o *IdentificationScoredData) GetRiskEventsOk() ([]RiskEvent, bool) {
+	if o == nil || IsNil(o.RiskEvents) {
+		return nil, false
+	}
+	return o.RiskEvents, true
+}
+
+// HasRiskEvents returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasRiskEvents() bool {
+	if o != nil && !IsNil(o.RiskEvents) {
+		return true
+	}
+
+	return false
+}
+
+// SetRiskEvents gets a reference to the given []RiskEvent and assigns it to the RiskEvents field.
+// Deprecated
+func (o *IdentificationScoredData) SetRiskEvents(v []RiskEvent) {
+	o.RiskEvents = v
+}
+
+// GetHre returns the Hre field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetHre() HRE {
+	if o == nil || IsNil(o.Hre) {
+		var ret HRE
+		return ret
+	}
+	return *o.Hre
+}
+
+// GetHreOk returns a tuple with the Hre field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetHreOk() (*HRE, bool) {
+	if o == nil || IsNil(o.Hre) {
+		return nil, false
+	}
+	return o.Hre, true
+}
+
+// HasHre returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasHre() bool {
+	if o != nil && !IsNil(o.Hre) {
+		return true
+	}
+
+	return false
+}
+
+// SetHre gets a reference to the given HRE and assigns it to the Hre field.
+func (o *IdentificationScoredData) SetHre(v HRE) {
+	o.Hre = &v
+}
+
+// GetSearchBotOwner returns the SearchBotOwner field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetSearchBotOwner() string {
+	if o == nil || IsNil(o.SearchBotOwner) {
+		var ret string
+		return ret
+	}
+	return *o.SearchBotOwner
+}
+
+// GetSearchBotOwnerOk returns a tuple with the SearchBotOwner field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetSearchBotOwnerOk() (*string, bool) {
+	if o == nil || IsNil(o.SearchBotOwner) {
+		return nil, false
+	}
+	return o.SearchBotOwner, true
+}
+
+// HasSearchBotOwner returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasSearchBotOwner() bool {
+	if o != nil && !IsNil(o.SearchBotOwner) {
+		return true
+	}
+
+	return false
+}
+
+// SetSearchBotOwner gets a reference to the given string and assigns it to the SearchBotOwner field.
+func (o *IdentificationScoredData) SetSearchBotOwner(v string) {
+	o.SearchBotOwner = &v
+}
+
+// GetAiBotOwner returns the AiBotOwner field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetAiBotOwner() string {
+	if o == nil || IsNil(o.AiBotOwner) {
+		var ret string
+		return ret
+	}
+	return *o.AiBotOwner
+}
+
+// GetAiBotOwnerOk returns a tuple with the AiBotOwner field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetAiBotOwnerOk() (*string, bool) {
+	if o == nil || IsNil(o.AiBotOwner) {
+		return nil, false
+	}
+	return o.AiBotOwner, true
+}
+
+// HasAiBotOwner returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasAiBotOwner() bool {
+	if o != nil && !IsNil(o.AiBotOwner) {
+		return true
+	}
+
+	return false
+}
+
+// SetAiBotOwner gets a reference to the given string and assigns it to the AiBotOwner field.
+func (o *IdentificationScoredData) SetAiBotOwner(v string) {
+	o.AiBotOwner = &v
+}
+
+// GetAiBrowserOwner returns the AiBrowserOwner field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetAiBrowserOwner() string {
+	if o == nil || IsNil(o.AiBrowserOwner) {
+		var ret string
+		return ret
+	}
+	return *o.AiBrowserOwner
+}
+
+// GetAiBrowserOwnerOk returns a tuple with the AiBrowserOwner field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetAiBrowserOwnerOk() (*string, bool) {
+	if o == nil || IsNil(o.AiBrowserOwner) {
+		return nil, false
+	}
+	return o.AiBrowserOwner, true
+}
+
+// HasAiBrowserOwner returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasAiBrowserOwner() bool {
+	if o != nil && !IsNil(o.AiBrowserOwner) {
+		return true
+	}
+
+	return false
+}
+
+// SetAiBrowserOwner gets a reference to the given string and assigns it to the AiBrowserOwner field.
+func (o *IdentificationScoredData) SetAiBrowserOwner(v string) {
+	o.AiBrowserOwner = &v
+}
+
 func (o IdentificationScoredData) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -540,6 +813,9 @@ func (o IdentificationScoredData) MarshalJSON() ([]byte, error) {
 
 func (o IdentificationScoredData) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.ClientIdentity) {
+		toSerialize["client_identity"] = o.ClientIdentity
+	}
 	toSerialize["request_id"] = o.RequestId
 	toSerialize["visitor_id"] = o.VisitorId
 	toSerialize["device_id"] = o.DeviceId
@@ -558,6 +834,27 @@ func (o IdentificationScoredData) ToMap() (map[string]interface{}, error) {
 	toSerialize["signals"] = o.Signals
 	toSerialize["detection_flags"] = o.DetectionFlags
 	toSerialize["observed_at"] = o.ObservedAt
+	if !IsNil(o.ResultVersion) {
+		toSerialize["result_version"] = o.ResultVersion
+	}
+	if !IsNil(o.ScoringVersion) {
+		toSerialize["scoring_version"] = o.ScoringVersion
+	}
+	if !IsNil(o.RiskEvents) {
+		toSerialize["risk_events"] = o.RiskEvents
+	}
+	if !IsNil(o.Hre) {
+		toSerialize["hre"] = o.Hre
+	}
+	if !IsNil(o.SearchBotOwner) {
+		toSerialize["search_bot_owner"] = o.SearchBotOwner
+	}
+	if !IsNil(o.AiBotOwner) {
+		toSerialize["ai_bot_owner"] = o.AiBotOwner
+	}
+	if !IsNil(o.AiBrowserOwner) {
+		toSerialize["ai_browser_owner"] = o.AiBrowserOwner
+	}
 	return toSerialize, nil
 }
 
