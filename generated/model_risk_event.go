@@ -22,6 +22,7 @@ var _ MappedNullable = &RiskEvent{}
 
 // RiskEvent struct for RiskEvent
 type RiskEvent struct {
+	// Open catalogue of independent source signals. ai_bot and ai_browser carry weight 0; search_bot remains separate. browser_automation carries weight 90 in task 204 releases. UI Good bot and Bad bot groups are not risk event codes. Keep unknown codes and use the payload scoring_version/result_version for historical interpretation.
 	Code string `json:"code"`
 	// Final scoring flag. false does not assert that every underlying probe completed.
 	Detected bool `json:"detected"`

@@ -21,6 +21,7 @@ var _ MappedNullable = &HistoryRow{}
 
 // HistoryRow One identification as stored, in its latest version. It describes the same identification as a webhook `data` object, with different field names:  | Webhook `data` | History row | |---|---| | `risk_score` | `score` | | `signals` | `score_details` (JSON-encoded string, zero weights included) | | `detection_flags` | the `is_*` columns and `check_incomplete` (each column names its flag) | | `detection_flags.browser_vpn_proxy` | derive it: `connection_type == \"browser_vpn_proxy\"` | | `domain` | `site_domain` when present, otherwise `domain` | | `public_ip` | `ip` (`0.0.0.0` instead of `\"\"`) and `country` | | `local_ip` | `webrtc_leak_ip` and `webrtc_leak_country` when `webrtc_leak_source` is set and not `none`, otherwise `web_rtc_ip` and `web_rtc_country` | | `traffic_source` | `traffic_channel`, `referrer_domain`, `entry_url`, `click_id_type`, `utm_*` (omitted when empty) | | `observed_at` (when scoring finished) | `created_at` (when the identification was made) |  The `ip_mismatch` flag has no column. Rows also carry diagnostic network fields (TCP, MTU and STUN measurements) that are not part of the stable contract: ignore fields you do not know.
 type HistoryRow struct {
+	ClientIdentity *ClientIdentity `json:"client_identity,omitempty"`
 	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
 	RequestId string `json:"request_id"`
 	// One visit on one origin (UUID v4 created in the browser), shared by the open tabs of that origin. The next visit after the last tab closes gets a new session ID. The nil UUID appears on rate-limit marker rows.
@@ -187,6 +188,38 @@ func NewHistoryRow(requestId string, sessionId string, cookieId string, domain s
 func NewHistoryRowWithDefaults() *HistoryRow {
 	this := HistoryRow{}
 	return &this
+}
+
+// GetClientIdentity returns the ClientIdentity field value if set, zero value otherwise.
+func (o *HistoryRow) GetClientIdentity() ClientIdentity {
+	if o == nil || IsNil(o.ClientIdentity) {
+		var ret ClientIdentity
+		return ret
+	}
+	return *o.ClientIdentity
+}
+
+// GetClientIdentityOk returns a tuple with the ClientIdentity field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetClientIdentityOk() (*ClientIdentity, bool) {
+	if o == nil || IsNil(o.ClientIdentity) {
+		return nil, false
+	}
+	return o.ClientIdentity, true
+}
+
+// HasClientIdentity returns a boolean if a field has been set.
+func (o *HistoryRow) HasClientIdentity() bool {
+	if o != nil && !IsNil(o.ClientIdentity) {
+		return true
+	}
+
+	return false
+}
+
+// SetClientIdentity gets a reference to the given ClientIdentity and assigns it to the ClientIdentity field.
+func (o *HistoryRow) SetClientIdentity(v ClientIdentity) {
+	o.ClientIdentity = &v
 }
 
 // GetRequestId returns the RequestId field value
@@ -1575,6 +1608,9 @@ func (o HistoryRow) MarshalJSON() ([]byte, error) {
 
 func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.ClientIdentity) {
+		toSerialize["client_identity"] = o.ClientIdentity
+	}
 	toSerialize["request_id"] = o.RequestId
 	toSerialize["session_id"] = o.SessionId
 	toSerialize["cookie_id"] = o.CookieId
@@ -1736,6 +1772,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 	additionalProperties := make(map[string]interface{})
 
 	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "client_identity")
 		delete(additionalProperties, "request_id")
 		delete(additionalProperties, "session_id")
 		delete(additionalProperties, "cookie_id")

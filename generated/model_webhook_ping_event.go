@@ -25,7 +25,7 @@ var _ MappedNullable = &WebhookPingEvent{}
 type WebhookPingEvent struct {
 	// Event type.
 	EventType string `json:"event_type"`
-	// Webhook contract version. Current release 2026-10-06; parsers also accept legacy 2026-06-01.
+	// Webhook contract version. Scored release 2026-10-06; multi-account group release 2026-10-07; parsers also accept legacy 2026-06-01.
 	SchemaVersion string `json:"schema_version"`
 	// When the ping was sent, with second precision.
 	CreatedAt time.Time `json:"created_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
