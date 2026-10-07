@@ -25,7 +25,7 @@ var _ MappedNullable = &IdentificationScoredEvent{}
 type IdentificationScoredEvent struct {
 	// Event type. Ignore events whose type you do not know instead of failing.
 	EventType string `json:"event_type"`
-	// Webhook contract version. Current release 2026-10-06; parsers also accept legacy 2026-06-01.
+	// Webhook contract version. Scored release 2026-10-06; multi-account group release 2026-10-07; parsers also accept legacy 2026-06-01.
 	SchemaVersion string `json:"schema_version"`
 	// RFC 3339 timestamp in UTC with up to 9 fractional digits (trailing zeros trimmed), for example `2026-09-30T12:34:57.482913041Z`. Parse it with a parser that accepts nanoseconds.
 	CreatedAt time.Time                `json:"created_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`

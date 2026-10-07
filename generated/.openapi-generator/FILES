@@ -3,10 +3,14 @@ api_history_api.go
 api_management_api.go
 client.go
 configuration.go
+model_client_identity.go
+model_client_identity_assessments_inner.go
+model_client_identity_claims_inner.go
+model_client_identity_evidence_inner.go
+model_client_identity_verified_inner.go
 model_detection_flags.go
 model_domain_profile.go
 model_error_body.go
-model_fingerprint.go
 model_health_status.go
 model_history_page.go
 model_history_row.go
@@ -16,6 +20,10 @@ model_identification_scored_data.go
 model_identification_scored_event.go
 model_ip_info.go
 model_legacy_snapshot.go
+model_multiaccount_changed_data.go
+model_multiaccount_changed_data_evidence_summary.go
+model_multiaccount_changed_data_source.go
+model_multiaccount_changed_event.go
 model_risk_event.go
 model_score_detail.go
 model_signal.go

@@ -27,6 +27,8 @@ type HREResult struct {
 	Reason     string         `json:"reason"`
 	Devices    *int32         `json:"devices,omitempty"`
 	MinDevices *int32         `json:"min_devices,omitempty"`
+	// Authoritative cluster ID for this HRE result. Null when no cluster was published for the result, including old stored verdicts; never a device ID. Reused on retries.
+	ClusterId NullableString `json:"cluster_id,omitempty"`
 }
 
 type _HREResult HREResult
@@ -189,6 +191,49 @@ func (o *HREResult) SetMinDevices(v int32) {
 	o.MinDevices = &v
 }
 
+// GetClusterId returns the ClusterId field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *HREResult) GetClusterId() string {
+	if o == nil || IsNil(o.ClusterId.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.ClusterId.Get()
+}
+
+// GetClusterIdOk returns a tuple with the ClusterId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *HREResult) GetClusterIdOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.ClusterId.Get(), o.ClusterId.IsSet()
+}
+
+// HasClusterId returns a boolean if a field has been set.
+func (o *HREResult) HasClusterId() bool {
+	if o != nil && o.ClusterId.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetClusterId gets a reference to the given NullableString and assigns it to the ClusterId field.
+func (o *HREResult) SetClusterId(v string) {
+	o.ClusterId.Set(&v)
+}
+
+// SetClusterIdNil sets the value for ClusterId to be an explicit nil
+func (o *HREResult) SetClusterIdNil() {
+	o.ClusterId.Set(nil)
+}
+
+// UnsetClusterId ensures that no value is present for ClusterId, not even an explicit nil
+func (o *HREResult) UnsetClusterId() {
+	o.ClusterId.Unset()
+}
+
 func (o HREResult) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -207,6 +252,9 @@ func (o HREResult) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.MinDevices) {
 		toSerialize["min_devices"] = o.MinDevices
+	}
+	if o.ClusterId.IsSet() {
+		toSerialize["cluster_id"] = o.ClusterId.Get()
 	}
 	return toSerialize, nil
 }

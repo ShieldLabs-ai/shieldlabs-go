@@ -206,6 +206,8 @@ type Signal struct {
 // DetectionFlags holds the 19 stable detection booleans of an
 // identification. Flags missing from a delivery are false.
 type DetectionFlags struct {
+	AIBot               bool `json:"ai_bot,omitempty"`
+	AIBrowser           bool `json:"ai_browser,omitempty"`
 	OSMismatch2         bool `json:"os_mismatch2,omitempty"`
 	DeviceSpoofing      bool `json:"device_spoofing,omitempty"`
 	LatencyTest         bool `json:"latency_test,omitempty"`
@@ -270,6 +272,10 @@ func DetectionFlagNames() []string {
 // field returns a pointer to the flag with the given wire name, or nil.
 func (f *DetectionFlags) field(name string) *bool {
 	switch name {
+	case "ai_bot":
+		return &f.AIBot
+	case "ai_browser":
+		return &f.AIBrowser
 	case "os_mismatch2":
 		return &f.OSMismatch2
 	case "device_spoofing":
