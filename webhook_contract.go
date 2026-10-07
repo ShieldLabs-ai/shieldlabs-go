@@ -2,6 +2,9 @@ package shieldlabs
 
 // WebhookExtension is absent on older events and History API responses.
 type WebhookExtension struct {
+	SearchBotOwner string       `json:"search_bot_owner,omitempty"`
+	AIBotOwner     string       `json:"ai_bot_owner,omitempty"`
+	AIBrowserOwner string       `json:"ai_browser_owner,omitempty"`
 	ResultVersion  string       `json:"result_version,omitempty"`
 	ScoringVersion string       `json:"scoring_version,omitempty"`
 	RiskEvents     []RiskEvent  `json:"risk_events,omitempty"`
@@ -16,6 +19,7 @@ type RiskEvent struct {
 	Status       string `json:"status"`
 }
 type HREResult struct {
+	ClusterID  *string `json:"cluster_id"`
 	Status     string  `json:"status"`
 	Level      *string `json:"level"`
 	Reason     string  `json:"reason"`

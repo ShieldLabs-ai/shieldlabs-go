@@ -8,7 +8,7 @@
 // message is the raw request body exactly as received. Always verify the raw
 // bytes: parsing and re-encoding the JSON changes them.
 //
-// Version 2026-10-06 carries a signed event_id in the body and an
+// Version 2026-10-07 carries a signed event_id in the body and an
 // X-Shield-Event-Id header. Failed deliveries are retried within a bounded
 // retry window. Deduplicate by EventID, persist the event before replying
 // with 2xx, and process asynchronously. Legacy events without EventID may
@@ -44,7 +44,7 @@ const (
 
 // SchemaVersion is the schema version of the events this package was built
 // for. Deliveries with other schema versions are accepted.
-const SchemaVersion = "2026-10-06"
+const SchemaVersion = "2026-10-07"
 
 var (
 	// ErrSignature reports a missing, malformed or non-matching signature,

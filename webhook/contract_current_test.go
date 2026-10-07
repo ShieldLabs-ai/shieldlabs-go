@@ -19,7 +19,22 @@ func TestCurrentCoreFixturePreservesEventAndFP21(t *testing.T) {
 	if !ok {
 		t.Fatal("wrong type")
 	}
-	if scored.EventID == "" || scored.SiteID != 7 || len(scored.Data.RiskEvents) != 19 || scored.Data.Fingerprint == nil || scored.Data.Fingerprint.HardwareID != "sample-hardware" || scored.Data.HRE.AccountTakeover.Reason != "no_history" {
+	if scored.EventID == "" || scored.SiteID != 7 || len(scored.Data.RiskEvents) != 0 || scored.Data.Fingerprint != nil || scored.Data.HRE.AccountTakeover.Reason != "no_history" {
 		t.Fatal("new contract lost", scored)
+	}
+}
+
+func TestAIBotOwnerAndHRECluster(t *testing.T) {
+	body, err := os.ReadFile("testdata/ai-bot.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := ConstructEvent(body, sign("secret", body), "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := e.(*IdentificationScoredEvent)
+	if s.Data.AIBotOwner != "OpenAI" || !s.Data.DetectionFlags.AIBot || s.Data.HRE.AccountTakeover.ClusterID != nil {
+		t.Fatal(s.Data)
 	}
 }

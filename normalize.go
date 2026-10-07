@@ -172,6 +172,8 @@ func identificationFromWebhookData(data map[string]any) *Identification {
 	}
 	var flags DetectionFlags
 	flagValues, _ := data["detection_flags"].(map[string]any)
+	flags.AIBot = truthy(flagValues["ai_bot"])
+	flags.AIBrowser = truthy(flagValues["ai_browser"])
 	flags.OSMismatch2 = truthy(flagValues["os_mismatch2"])
 	flags.DeviceSpoofing = truthy(flagValues["device_spoofing"])
 	flags.LatencyTest = truthy(flagValues["latency_test"])
