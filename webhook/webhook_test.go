@@ -159,8 +159,7 @@ func TestConstructPrettyScoredRateLimitedAndTestDeliveries(t *testing.T) {
 		assertMatchesCase(t, scored.Data, caseName)
 	}
 
-	// The analytics dashboard test delivery has 17 of the 19 flags and
-	// second-precision timestamps.
+	// The analytics dashboard test delivery lists the 20 public flags.
 	body := readFixture(t, "webhook-test-delivery.json")
 	var raw struct {
 		Data struct {
@@ -170,8 +169,8 @@ func TestConstructPrettyScoredRateLimitedAndTestDeliveries(t *testing.T) {
 	if err := json.Unmarshal(body, &raw); err != nil {
 		t.Fatal(err)
 	}
-	if len(raw.Data.DetectionFlags) != 17 {
-		t.Fatalf("fixture has %d flags, want 17", len(raw.Data.DetectionFlags))
+	if len(raw.Data.DetectionFlags) != 20 {
+		t.Fatalf("fixture has %d flags, want 20", len(raw.Data.DetectionFlags))
 	}
 	event, _ := ConstructEvent(body, sign(realSecret, body), realSecret)
 	data := event.(*IdentificationScoredEvent).Data

@@ -42,7 +42,7 @@ var exactSignalSlugs = map[string]string{
 	"UA OS is not detected":                     SignalOSNotDetected,
 	"Network OS is not detected":                SignalOSNotDetected,
 	"Browser timezone ≠ IP-timezone":            SignalTimezoneMismatch,
-	"Browser VPN/Proxy":                         SignalBrowserVPNProxy,
+	"Browser VPN/Proxy":                         SignalVPN,
 	"Browser Automation":                        SignalBrowserAutomation,
 	"User has been banned 1H, to many requests": SignalRateLimited,
 	"Port scan routed via proxy (antidetect browser pattern)": SignalProxyRoutedAntidetect,
@@ -51,7 +51,7 @@ var exactSignalSlugs = map[string]string{
 var prefixSignalSlugs = []struct{ prefix, slug string }{
 	{"Antidetect browser", SignalAntidetectBrowser},
 	{"Os_mismatch", SignalOSMismatch},
-	{"OS mismatch2", "os_mismatch2"},
+	{"OS mismatch2", SignalOSMismatch},
 	{"TCP handshake", "tcp_handshake_v2"},
 	{"Latency test", "ws_tcp_latency"},
 	{"JavaScript disabled", SignalJavaScriptDisabled},
