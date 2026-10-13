@@ -202,62 +202,64 @@ type Signal struct {
 	Description *string `json:"description"`
 }
 
-// DetectionFlags holds the 19 stable detection booleans of an
+// DetectionFlags holds the 20 public detection booleans of an
 // identification. Flags missing from a delivery are false.
 type DetectionFlags struct {
-	VPN                 bool `json:"vpn"`
-	PrivacyRelay        bool `json:"privacy_relay"`
-	BrowserVPNProxy     bool `json:"browser_vpn_proxy"`
-	Tor                 bool `json:"tor"`
-	Proxy               bool `json:"proxy"`
-	DatacenterIP        bool `json:"datacenter_ip"`
-	Abuser              bool `json:"abuser"`
-	OSMismatch          bool `json:"os_mismatch"`
-	OSNotDetected       bool `json:"os_not_detected"`
-	TimezoneMismatch    bool `json:"timezone_mismatch"`
-	AntiDetectBrowser   bool `json:"anti_detect_browser"`
-	BrowserAutomation   bool `json:"browser_automation"`
-	IPMismatch          bool `json:"ip_mismatch"`
-	Incognito           bool `json:"incognito"`
-	SearchBot           bool `json:"search_bot"`
-	SuspiciousPaidClick bool `json:"suspicious_paid_click"`
-	JavaScriptDisabled  bool `json:"javascript_disabled"`
-	StunNotChecked      bool `json:"stun_not_checked"`
-	CheckIncomplete     bool `json:"check_incomplete"`
+	VPN                bool `json:"vpn"`
+	Proxy              bool `json:"proxy"`
+	PrivacyRelay       bool `json:"privacy_relay"`
+	CheckIncomplete    bool `json:"check_incomplete"`
+	StunNotChecked     bool `json:"stun_not_checked"`
+	OSNotDetected      bool `json:"os_not_detected"`
+	TimezoneMismatch   bool `json:"timezone_mismatch"`
+	JavaScriptDisabled bool `json:"javascript_disabled"`
+	OSMismatch         bool `json:"os_mismatch"`
+	IPMismatch         bool `json:"ip_mismatch"`
+	LatencyTest        bool `json:"ws_tcp_latency"`
+	AntiDetectBrowser  bool `json:"anti_detect_browser"`
+	DeviceSpoofing     bool `json:"device_spoofing"`
+	BannedIP           bool `json:"rate_limited"`
+	Incognito          bool `json:"incognito"`
+	SearchBot          bool `json:"search_bot"`
+	AIBot              bool `json:"ai_bot"`
+	BrowserAutomation  bool `json:"browser_automation"`
+	AIBrowser          bool `json:"ai_browser"`
+	Tor                bool `json:"tor"`
 }
 
 // Detection flag names as they appear on the wire. Use them with
 // [DetectionFlags.Get] and [EvaluateOptions].BlockFlags.
 const (
-	FlagVPN                 = "vpn"
-	FlagPrivacyRelay        = "privacy_relay"
-	FlagBrowserVPNProxy     = "browser_vpn_proxy"
-	FlagTor                 = "tor"
-	FlagProxy               = "proxy"
-	FlagDatacenterIP        = "datacenter_ip"
-	FlagAbuser              = "abuser"
-	FlagOSMismatch          = "os_mismatch"
-	FlagOSNotDetected       = "os_not_detected"
-	FlagTimezoneMismatch    = "timezone_mismatch"
-	FlagAntiDetectBrowser   = "anti_detect_browser"
-	FlagBrowserAutomation   = "browser_automation"
-	FlagIPMismatch          = "ip_mismatch"
-	FlagIncognito           = "incognito"
-	FlagSearchBot           = "search_bot"
-	FlagSuspiciousPaidClick = "suspicious_paid_click"
-	FlagJavaScriptDisabled  = "javascript_disabled"
-	FlagStunNotChecked      = "stun_not_checked"
-	FlagCheckIncomplete     = "check_incomplete"
+	FlagVPN                = "vpn"
+	FlagProxy              = "proxy"
+	FlagPrivacyRelay       = "privacy_relay"
+	FlagCheckIncomplete    = "check_incomplete"
+	FlagStunNotChecked     = "stun_not_checked"
+	FlagOSNotDetected      = "os_not_detected"
+	FlagTimezoneMismatch   = "timezone_mismatch"
+	FlagJavaScriptDisabled = "javascript_disabled"
+	FlagOSMismatch         = "os_mismatch"
+	FlagIPMismatch         = "ip_mismatch"
+	FlagLatencyTest        = "ws_tcp_latency"
+	FlagAntiDetectBrowser  = "anti_detect_browser"
+	FlagDeviceSpoofing     = "device_spoofing"
+	FlagBannedIP           = "rate_limited"
+	FlagIncognito          = "incognito"
+	FlagSearchBot          = "search_bot"
+	FlagAIBot              = "ai_bot"
+	FlagBrowserAutomation  = "browser_automation"
+	FlagAIBrowser          = "ai_browser"
+	FlagTor                = "tor"
 )
 
 var flagNames = [...]string{
-	FlagVPN, FlagPrivacyRelay, FlagBrowserVPNProxy, FlagTor, FlagProxy, FlagDatacenterIP,
-	FlagAbuser, FlagOSMismatch, FlagOSNotDetected, FlagTimezoneMismatch, FlagAntiDetectBrowser,
-	FlagBrowserAutomation, FlagIPMismatch, FlagIncognito, FlagSearchBot, FlagSuspiciousPaidClick,
-	FlagJavaScriptDisabled, FlagStunNotChecked, FlagCheckIncomplete,
+	FlagVPN, FlagProxy, FlagPrivacyRelay, FlagCheckIncomplete, FlagStunNotChecked,
+	FlagOSNotDetected, FlagTimezoneMismatch, FlagJavaScriptDisabled, FlagOSMismatch,
+	FlagIPMismatch, FlagLatencyTest, FlagAntiDetectBrowser, FlagDeviceSpoofing, FlagBannedIP,
+	FlagIncognito, FlagSearchBot, FlagAIBot, FlagBrowserAutomation, FlagAIBrowser, FlagTor,
 }
 
-// DetectionFlagNames returns the 19 detection flag names in wire order.
+// DetectionFlagNames returns the 20 detection flag names in wire order.
 func DetectionFlagNames() []string {
 	return append([]string(nil), flagNames[:]...)
 }
@@ -267,42 +269,44 @@ func (f *DetectionFlags) field(name string) *bool {
 	switch name {
 	case FlagVPN:
 		return &f.VPN
-	case FlagPrivacyRelay:
-		return &f.PrivacyRelay
-	case FlagBrowserVPNProxy:
-		return &f.BrowserVPNProxy
-	case FlagTor:
-		return &f.Tor
 	case FlagProxy:
 		return &f.Proxy
-	case FlagDatacenterIP:
-		return &f.DatacenterIP
-	case FlagAbuser:
-		return &f.Abuser
-	case FlagOSMismatch:
-		return &f.OSMismatch
+	case FlagPrivacyRelay:
+		return &f.PrivacyRelay
+	case FlagCheckIncomplete:
+		return &f.CheckIncomplete
+	case FlagStunNotChecked:
+		return &f.StunNotChecked
 	case FlagOSNotDetected:
 		return &f.OSNotDetected
 	case FlagTimezoneMismatch:
 		return &f.TimezoneMismatch
-	case FlagAntiDetectBrowser:
-		return &f.AntiDetectBrowser
-	case FlagBrowserAutomation:
-		return &f.BrowserAutomation
+	case FlagJavaScriptDisabled:
+		return &f.JavaScriptDisabled
+	case FlagOSMismatch:
+		return &f.OSMismatch
 	case FlagIPMismatch:
 		return &f.IPMismatch
+	case FlagLatencyTest:
+		return &f.LatencyTest
+	case FlagAntiDetectBrowser:
+		return &f.AntiDetectBrowser
+	case FlagDeviceSpoofing:
+		return &f.DeviceSpoofing
+	case FlagBannedIP:
+		return &f.BannedIP
 	case FlagIncognito:
 		return &f.Incognito
 	case FlagSearchBot:
 		return &f.SearchBot
-	case FlagSuspiciousPaidClick:
-		return &f.SuspiciousPaidClick
-	case FlagJavaScriptDisabled:
-		return &f.JavaScriptDisabled
-	case FlagStunNotChecked:
-		return &f.StunNotChecked
-	case FlagCheckIncomplete:
-		return &f.CheckIncomplete
+	case FlagAIBot:
+		return &f.AIBot
+	case FlagBrowserAutomation:
+		return &f.BrowserAutomation
+	case FlagAIBrowser:
+		return &f.AIBrowser
+	case FlagTor:
+		return &f.Tor
 	}
 	return nil
 }

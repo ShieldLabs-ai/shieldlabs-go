@@ -10,26 +10,26 @@ import (
 	"github.com/ShieldLabs-ai/shieldlabs-go/internal/wire"
 )
 
-// historyFlagColumns maps a detection flag to its History row column. The
-// browser_vpn_proxy and ip_mismatch flags have no column and are derived.
+// historyFlagColumns maps a detection flag to its History row column. vpn,
+// os_mismatch and ip_mismatch are derived from more than one column.
 var historyFlagColumns = map[string]string{
-	FlagVPN:                 "is_vpn",
-	FlagPrivacyRelay:        "is_privacy_relay",
-	FlagTor:                 "is_tor",
-	FlagProxy:               "is_proxy",
-	FlagDatacenterIP:        "is_datacenter",
-	FlagAbuser:              "is_abuser",
-	FlagOSMismatch:          "is_os_mismatch",
-	FlagOSNotDetected:       "is_os_not_detected",
-	FlagTimezoneMismatch:    "is_timezone_mismatch",
-	FlagAntiDetectBrowser:   "is_antidetect",
-	FlagBrowserAutomation:   "is_browser_automation",
-	FlagIncognito:           "is_incognito",
-	FlagSearchBot:           "is_search_bot",
-	FlagSuspiciousPaidClick: "is_suspicious_paid_click",
-	FlagJavaScriptDisabled:  "is_js_disabled",
-	FlagStunNotChecked:      "is_stun_not_checked",
-	FlagCheckIncomplete:     "check_incomplete",
+	FlagProxy:              "is_proxy",
+	FlagPrivacyRelay:       "is_privacy_relay",
+	FlagCheckIncomplete:    "check_incomplete",
+	FlagStunNotChecked:     "is_stun_not_checked",
+	FlagOSNotDetected:      "is_os_not_detected",
+	FlagTimezoneMismatch:   "is_timezone_mismatch",
+	FlagJavaScriptDisabled: "is_js_disabled",
+	FlagLatencyTest:        "is_latency_test",
+	FlagAntiDetectBrowser:  "is_antidetect",
+	FlagDeviceSpoofing:     "is_device_spoof",
+	FlagBannedIP:           "is_rate_limited",
+	FlagIncognito:          "is_incognito",
+	FlagSearchBot:          "is_search_bot",
+	FlagAIBot:              "is_ai_bot",
+	FlagBrowserAutomation:  "is_browser_automation",
+	FlagAIBrowser:          "is_ai_browser",
+	FlagTor:                "is_tor",
 }
 
 // ipLeakPrefix starts the History description that reports a difference
@@ -74,8 +74,10 @@ func identificationFromHistoryRow(row map[string]any) *Identification {
 	for _, name := range flagNames {
 		var v bool
 		switch name {
-		case FlagBrowserVPNProxy:
-			v = row["connection_type"] == "browser_vpn_proxy"
+		case FlagVPN:
+			v = truthy(row["is_vpn"]) || truthy(row["is_browser_vpn_proxy"]) || row["connection_type"] == "browser_vpn_proxy"
+		case FlagOSMismatch:
+			v = truthy(row["is_os_mismatch"]) || truthy(row["is_os_mismatch2"])
 		case FlagIPMismatch:
 			v = !searchBot && (ipLeakDetail || (publicIP != "" && localIP != "" && publicIP != localIP))
 		default:

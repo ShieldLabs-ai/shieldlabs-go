@@ -48,7 +48,7 @@ const (
 
 // SchemaVersion is the schema version of the events this package was built
 // for. Deliveries with other schema versions are accepted.
-const SchemaVersion = "2026-06-01"
+const SchemaVersion = "2026-10-13"
 
 var (
 	// ErrSignature reports a missing, malformed or non-matching signature,
@@ -130,7 +130,7 @@ type Event interface {
 type Envelope struct {
 	// EventType is the event type, for example "identification.scored".
 	EventType string `json:"event_type"`
-	// SchemaVersion is the event schema version, currently "2026-06-01".
+	// SchemaVersion is the event schema version, currently "2026-10-13".
 	SchemaVersion string `json:"schema_version"`
 	// CreatedAt is when the event was created (UTC), or the zero time when it
 	// could not be read.

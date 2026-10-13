@@ -140,7 +140,7 @@ func TestHistoryRowTolerance(t *testing.T) {
 		t.Errorf("UserHID = %v", ident.UserHID)
 	}
 	f := ident.DetectionFlags
-	if !f.VPN || f.Tor || f.Proxy || !f.DatacenterIP {
+	if !f.VPN || f.Tor || f.Proxy || f.OSMismatch {
 		t.Errorf("truthiness of flag columns: %+v", f)
 	}
 	if ident.ConnectionType != "satellite" {
@@ -192,8 +192,8 @@ func TestHistoryIPMismatchRules(t *testing.T) {
 		}
 	}
 	ident, _ := ParseHistoryRow([]byte(`{"connection_type":"browser_vpn_proxy"}`))
-	if !ident.DetectionFlags.BrowserVPNProxy {
-		t.Error("browser_vpn_proxy is derived from connection_type")
+	if !ident.DetectionFlags.VPN {
+		t.Error("vpn is true when connection_type is browser_vpn_proxy")
 	}
 }
 
@@ -246,7 +246,7 @@ func TestWebhookDataTolerance(t *testing.T) {
 
 func TestDetectionFlagsAccessors(t *testing.T) {
 	names := DetectionFlagNames()
-	if len(names) != 19 {
+	if len(names) != 20 {
 		t.Fatalf("want 19 flag names, got %d", len(names))
 	}
 	names[0] = "changed"
@@ -258,7 +258,7 @@ func TestDetectionFlagsAccessors(t *testing.T) {
 		*f.field(name) = i%2 == 0
 	}
 	m := f.Map()
-	if len(m) != 19 {
+	if len(m) != 20 {
 		t.Fatalf("Map has %d entries", len(m))
 	}
 	for i, name := range DetectionFlagNames() {

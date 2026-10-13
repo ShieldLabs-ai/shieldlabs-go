@@ -228,7 +228,7 @@ ShieldLabs posts `identification.scored` events to your endpoints, signed with `
 - Use the History API for guaranteed reads and for the latest state: a failed delivery is not sent again, and a History row can be refined after its webhook was sent.
 - To rotate a secret without downtime, pass both secrets: `webhook.ConstructEvent(body, header, newSecret, oldSecret)`.
 
-The analytics dashboard "Test" button sends a sample `identification.scored` event with 17 of the 19 detection flags; missing flags are parsed as `false`.
+The analytics dashboard "Test" button sends a sample `identification.scored` event. Missing flags are parsed as `false`.
 
 ### User HID
 
