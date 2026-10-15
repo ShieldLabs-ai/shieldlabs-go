@@ -10,6 +10,7 @@ import "time"
 // Every field is always set. Unknown values (a new connection type, a new
 // risk signal) are kept as they arrive.
 type Identification struct {
+	ClientIdentity *ClientIdentity `json:"client_identity,omitempty"`
 	// RequestID is the UUID the browser agent returned for this
 	// identification. Use it to join the browser call, the webhook and the
 	// History row, and to make sure one identification authorizes only one
