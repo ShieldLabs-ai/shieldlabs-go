@@ -10,11 +10,11 @@ import "time"
 // Every field is always set. Unknown values (a new connection type, a new
 // risk signal) are kept as they arrive.
 type Identification struct {
-	// RequestID is the UUID the browser agent returned for this
+	// IdentificationID is the UUID the browser agent returned for this
 	// identification. Use it to join the browser call, the webhook and the
 	// History row, and to make sure one identification authorizes only one
 	// protected action.
-	RequestID string `json:"request_id"`
+	IdentificationID string `json:"identification_id"`
 
 	// VisitorID is the server-side visitor identifier. It is sticky to the
 	// device: a new cookie on a known device usually keeps the visitor ID.

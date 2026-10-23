@@ -23,7 +23,7 @@ var _ MappedNullable = &LegacySnapshot{}
 // LegacySnapshot One identification as returned by the deprecated Management API history endpoint (PascalCase keys). Also carries diagnostic network fields that are not part of the stable contract. Use the History API row instead.
 type LegacySnapshot struct {
 	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
-	RequestID string `json:"RequestID"`
+	IdentificationID string `json:"IdentificationID"`
 	// One visit on one origin (UUID v4 created in the browser), shared by the open tabs of that origin. The next visit after the last tab closes gets a new session ID. The nil UUID appears on rate-limit marker rows.
 	SessionID string `json:"SessionID"`
 	// First-party browser identifier kept by the ShieldLabs agent (UUID v4). A missing or malformed value is stored as the nil UUID.
@@ -67,9 +67,9 @@ type _LegacySnapshot LegacySnapshot
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewLegacySnapshot(requestID string, sessionID string, cookieID string, deviceID string, visitorID string, iP string, connectionType string, webRtcHIP string, webRtcCountry string, webRtcConnectionType string, oS string, browser string, deviceType string, country string, userHID string, score int32, details []ScoreDetail, lastRequestTime time.Time) *LegacySnapshot {
+func NewLegacySnapshot(identificationID string, sessionID string, cookieID string, deviceID string, visitorID string, iP string, connectionType string, webRtcHIP string, webRtcCountry string, webRtcConnectionType string, oS string, browser string, deviceType string, country string, userHID string, score int32, details []ScoreDetail, lastRequestTime time.Time) *LegacySnapshot {
 	this := LegacySnapshot{}
-	this.RequestID = requestID
+	this.IdentificationID = identificationID
 	this.SessionID = sessionID
 	this.CookieID = cookieID
 	this.DeviceID = deviceID
@@ -98,28 +98,28 @@ func NewLegacySnapshotWithDefaults() *LegacySnapshot {
 	return &this
 }
 
-// GetRequestID returns the RequestID field value
-func (o *LegacySnapshot) GetRequestID() string {
+// GetIdentificationID returns the IdentificationID field value
+func (o *LegacySnapshot) GetIdentificationID() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.RequestID
+	return o.IdentificationID
 }
 
-// GetRequestIDOk returns a tuple with the RequestID field value
+// GetIdentificationIDOk returns a tuple with the IdentificationID field value
 // and a boolean to check if the value has been set.
-func (o *LegacySnapshot) GetRequestIDOk() (*string, bool) {
+func (o *LegacySnapshot) GetIdentificationIDOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RequestID, true
+	return &o.IdentificationID, true
 }
 
-// SetRequestID sets field value
-func (o *LegacySnapshot) SetRequestID(v string) {
-	o.RequestID = v
+// SetIdentificationID sets field value
+func (o *LegacySnapshot) SetIdentificationID(v string) {
+	o.IdentificationID = v
 }
 
 // GetSessionID returns the SessionID field value
@@ -540,7 +540,7 @@ func (o LegacySnapshot) MarshalJSON() ([]byte, error) {
 
 func (o LegacySnapshot) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["RequestID"] = o.RequestID
+	toSerialize["IdentificationID"] = o.IdentificationID
 	toSerialize["SessionID"] = o.SessionID
 	toSerialize["CookieID"] = o.CookieID
 	toSerialize["DeviceID"] = o.DeviceID
@@ -571,7 +571,7 @@ func (o *LegacySnapshot) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"RequestID",
+		"IdentificationID",
 		"SessionID",
 		"CookieID",
 		"DeviceID",
@@ -618,7 +618,7 @@ func (o *LegacySnapshot) UnmarshalJSON(data []byte) (err error) {
 	additionalProperties := make(map[string]interface{})
 
 	if err = json.Unmarshal(data, &additionalProperties); err == nil {
-		delete(additionalProperties, "RequestID")
+		delete(additionalProperties, "IdentificationID")
 		delete(additionalProperties, "SessionID")
 		delete(additionalProperties, "CookieID")
 		delete(additionalProperties, "DeviceID")

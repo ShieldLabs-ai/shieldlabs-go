@@ -46,17 +46,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// requestID arrives from your page together with the signup form.
-	requestID := "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"
+	// identificationID arrives from your page together with the signup form.
+	identificationID := "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"
 
 	// Waits for the verdict with a 10-second budget; nil means "not scored in time".
-	ident, err := client.Identifications.Get(context.Background(), requestID, nil)
+	ident, err := client.Identifications.Get(context.Background(), identificationID, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	verdict := shieldlabs.EvaluateIdentification(ident, shieldlabs.EvaluateOptions{
-		IsReplay: func(requestID string) bool { return alreadyUsed(requestID) },
+		IsReplay: func(identificationID string) bool { return alreadyUsed(identificationID) },
 	})
 	if !verdict.OK {
 		log.Printf("signup refused: %s", verdict.Reason) // missing, replayed, stale, blocked_band, ...
@@ -67,7 +67,7 @@ func main() {
 
 // alreadyUsed records the request ID in your store and reports whether it was
 // there before. One identification authorizes one protected action.
-func alreadyUsed(requestID string) bool { return false }
+func alreadyUsed(identificationID string) bool { return false }
 ```
 
 Verify and parse webhook deliveries:
@@ -109,7 +109,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if e, ok := event.(*webhook.IdentificationScoredEvent); ok {
 		// Keep this idempotent on the request ID: a later server release
 		// retries failed deliveries with identical bytes.
-		log.Printf("request %s scored %d (%s)", e.Data.RequestID, e.Data.RiskScore, e.Data.Band())
+		log.Printf("request %s scored %d (%s)", e.Data.IdentificationID, e.Data.RiskScore, e.Data.Band())
 	}
 	w.WriteHeader(http.StatusOK) // answer within one second
 }
@@ -135,7 +135,7 @@ Keys stay on your server. The SDK reads no environment variables itself: pass va
 Scoring is asynchronous. The History row for a request ID appears about 1 to 3 seconds after the browser call, and follow-up checks can refine it for up to about 10 seconds. Start the identification in the browser when the user begins the action (for example when the signup form opens), not when the form is submitted, so that the verdict is usually ready when your backend asks for it. `Identifications.Get` waits for the row:
 
 ```go
-ident, err := client.Identifications.Get(ctx, requestID, &shieldlabs.GetIdentificationOptions{
+ident, err := client.Identifications.Get(ctx, identificationID, &shieldlabs.GetIdentificationOptions{
 	Timeout: 5 * time.Second, // total budget of the wait, default 10 s
 })
 ```
@@ -148,7 +148,7 @@ ident, err := client.Identifications.Get(ctx, requestID, &shieldlabs.GetIdentifi
 - **429 floor.** After a 429 the next wait is the longest of the scheduled wait, 1 second and the `Retry-After` delay capped at 10 seconds. Without the header, and with `Retry-After: 0` or a date in the past, the delay counts as 0 and the 1-second floor still applies. Near the deadline that wait is shortened like any other, so the last lookup still runs at the deadline. When the capped `Retry-After` delay alone would end after the deadline, the 429 error is returned at once.
 - **4xx stop.** A 400, 401, 403 or 404 answer ends the wait at once with its error (`ErrBadRequest`, `ErrAuthentication` or `ErrNotFound`), because a wrong key or a wrong base URL does not heal.
 - **Result.** When the time is up, `Get` returns the error of the last lookup if it failed, otherwise `(nil, nil)`. A missing identification means **unverified**, never clean.
-- **First version.** `Get` returns the first version of the row. For the refined state (for example in a later review job), read the row again with `client.History.Search(ctx, shieldlabs.LookupRequestID, requestID, &shieldlabs.HistorySearchOptions{Limit: 1})`.
+- **First version.** `Get` returns the first version of the row. For the refined state (for example in a later review job), read the row again with `client.History.Search(ctx, shieldlabs.LookupIdentificationID, identificationID, &shieldlabs.HistorySearchOptions{Limit: 1})`.
 
 ### Checking an identification before a protected action
 
@@ -211,7 +211,7 @@ for h, err := range client.History.All(ctx, shieldlabs.LookupUserHID, userHID,
 
 `MaxItems` stops the iteration after that many identifications. `MaxItems: 0`, the zero value, means no limit, so a nil options pointer iterates over every row.
 
-Arguments are validated on the client before anything is sent, so a typo never turns into an unfiltered or failing query: the lookup type must be one of `LookupIP`, `LookupUserHID`, `LookupVisitorID`, `LookupRequestID`, `LookupDeviceID`, `LookupSessionID`, `LookupCookieID`; UUIDs must be UUIDs (sent lowercase); an IP must be a dotted IPv4 address; `Limit` is 1 to 100 (0 selects 20) and `Offset` is 0 or more. Invalid arguments return an error matching `ErrValidation`.
+Arguments are validated on the client before anything is sent, so a typo never turns into an unfiltered or failing query: the lookup type must be one of `LookupIP`, `LookupUserHID`, `LookupVisitorID`, `LookupIdentificationID`, `LookupDeviceID`, `LookupSessionID`, `LookupCookieID`; UUIDs must be UUIDs (sent lowercase); an IP must be a dotted IPv4 address; `Limit` is 1 to 100 (0 selects 20) and `Offset` is 0 or more. Invalid arguments return an error matching `ErrValidation`.
 
 A User HID is matched exactly and case-sensitively. It is sent as one path segment in the escaped form the History API decodes, so values with `@`, `+`, `=`, `,`, `;` or spaces match as they are. A User HID that is empty, contains `/`, is `.` or `..`, or is not valid UTF-8 cannot be matched in the request path, so `Search` and `All` return `ErrValidation` for it instead of an empty page. User HIDs from `UserHID` are 64 hex characters and always work; if you build User HIDs another way, avoid `/` (standard base64 contains it, base64url does not).
 
@@ -224,7 +224,7 @@ ShieldLabs posts `identification.scored` events to your endpoints, signed with `
 - Verify the **raw** body: read it with `io.ReadAll` and pass the bytes. Parsing and re-encoding the JSON changes them.
 - `ConstructEvent` returns `*IdentificationScoredEvent` (with `Data`, a normalized `Identification`), `*PingEvent` (sent by the analytics dashboard's "Verify" button) or `*UnknownEvent` for event types this version does not know. Acknowledge them all.
 - Today ShieldLabs sends one delivery per identification and endpoint, with a 1-second timeout and no retries. Answer with a 2xx status within one second and do slow work afterwards or in a queue.
-- Make the handler idempotent on `Data.RequestID`: a later server release retries failed deliveries, and a retry resends identical bytes.
+- Make the handler idempotent on `Data.IdentificationID`: a later server release retries failed deliveries, and a retry resends identical bytes.
 - Use the History API for guaranteed reads and for the latest state: a failed delivery is not sent again, and a History row can be refined after its webhook was sent.
 - To rotate a secret without downtime, pass both secrets: `webhook.ConstructEvent(body, header, newSecret, oldSecret)`.
 
@@ -288,7 +288,7 @@ Full documentation: [pkg.go.dev](https://pkg.go.dev/github.com/ShieldLabs-ai/shi
 |---|---|
 | `NewClient(apiKey, ...Option) (*Client, error)` | History API client (Private API Key) |
 | `WithBaseURL`, `WithHTTPClient`, `WithTimeout`, `WithMaxRetries`, `WithLogger`, `WithInsecureHTTP` | Options for both clients |
-| `(*IdentificationsService).Get(ctx, requestID, *GetIdentificationOptions) (*Identification, error)` | One identification by request ID, waiting for the verdict unless `NoWait` is set; `(nil, nil)` when not found in time |
+| `(*IdentificationsService).Get(ctx, identificationID, *GetIdentificationOptions) (*Identification, error)` | One identification by request ID, waiting for the verdict unless `NoWait` is set; `(nil, nil)` when not found in time |
 | `GetIdentificationOptions{NoWait, Timeout, PollInterval}` | The zero value waits: `Timeout` 0 means 10 s, `PollInterval` 0 means 250 ms (values below 100 ms become 100 ms); waits are p, 2p, 4p, 6p, then 8p, each capped at max(2 s, p) |
 | `(*HistoryService).Search(ctx, LookupType, value, *HistorySearchOptions) (*HistoryPage, error)` | One page of identifications for an identifier |
 | `(*HistoryService).All(ctx, LookupType, value, *HistoryIterateOptions) iter.Seq2[*Identification, error]` | Iterator over every page, deduplicated on request ID |
@@ -305,7 +305,7 @@ Full documentation: [pkg.go.dev](https://pkg.go.dev/github.com/ShieldLabs-ai/shi
 | `SignalSlug(description) string` | Signal name for a History signal description |
 | `Identification`, `DetectionFlags`, `Signal`, `IPInfo`, `TrafficSource`, `DomainProfile`, `HistoryPage` | Data model; JSON field names follow the webhook contract |
 
-`Identification` fields: `RequestID`, `VisitorID`, `DeviceID`, `SessionID`, `CookieID`, `UserHID` (nil when none), `Domain`, `PublicIP`, `LocalIP` (each `{IP, Country}`), `ConnectionType` (`direct`, `mobile`, `vpn`, `proxy`, `tor`, `privacy_relay`, `browser_vpn_proxy`, `unknown`), `OS`, `Browser`, `DeviceType`, `TrafficSource`, `RiskScore`, `Signals`, `DetectionFlags` (19 booleans), `ObservedAt` (UTC), `Source` (`webhook` or `history`) and `Raw` (the original object). Unknown values are kept as they arrive.
+`Identification` fields: `IdentificationID`, `VisitorID`, `DeviceID`, `SessionID`, `CookieID`, `UserHID` (nil when none), `Domain`, `PublicIP`, `LocalIP` (each `{IP, Country}`), `ConnectionType` (`direct`, `mobile`, `vpn`, `proxy`, `tor`, `privacy_relay`, `browser_vpn_proxy`, `unknown`), `OS`, `Browser`, `DeviceType`, `TrafficSource`, `RiskScore`, `Signals`, `DetectionFlags` (19 booleans), `ObservedAt` (UTC), `Source` (`webhook` or `history`) and `Raw` (the original object). Unknown values are kept as they arrive.
 
 ## Errors and retries
 

@@ -16,7 +16,7 @@
 //
 //	curl -X POST http://127.0.0.1:8080/signup \
 //	  -H 'Content-Type: application/json' \
-//	  -d '{"requestId":"3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"}'
+//	  -d '{"identificationId":"3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"}'
 package main
 
 import (
@@ -66,8 +66,8 @@ type app struct {
 	webhookSecrets []string
 	waitTimeout    time.Duration
 
-	// usedRequestIDs makes one identification authorize one signup attempt.
-	usedRequestIDs *recentSet
+	// usedIdentificationIDs makes one identification authorize one signup attempt.
+	usedIdentificationIDs *recentSet
 	// deliveries makes the webhook handler idempotent on the request ID. Today
 	// each identification is delivered once (1-second timeout, no retries); a
 	// later server release retries failed deliveries with identical bytes.
@@ -76,11 +76,11 @@ type app struct {
 
 func newApp(client *shieldlabs.Client, webhookSecrets []string, waitTimeout time.Duration) *app {
 	return &app{
-		client:         client,
-		webhookSecrets: webhookSecrets,
-		waitTimeout:    waitTimeout,
-		usedRequestIDs: newRecentSet(10 * time.Minute),
-		deliveries:     newRecentSet(24 * time.Hour),
+		client:                client,
+		webhookSecrets:        webhookSecrets,
+		waitTimeout:           waitTimeout,
+		usedIdentificationIDs: newRecentSet(10 * time.Minute),
+		deliveries:            newRecentSet(24 * time.Hour),
 	}
 }
 
@@ -94,19 +94,19 @@ func (a *app) routes() http.Handler {
 // signup guards account creation with the identification the browser agent
 // created for this submission.
 func (a *app) signup(w http.ResponseWriter, r *http.Request) {
-	requestID := readRequestID(w, r)
-	if requestID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": "requestId is required"})
+	identificationID := readIdentificationID(w, r)
+	if identificationID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": "identificationId is required"})
 		return
 	}
 
 	// Scoring is asynchronous: wait for the verdict, with waitTimeout as the
 	// total budget.
-	ident, err := a.client.Identifications.Get(r.Context(), requestID,
+	ident, err := a.client.Identifications.Get(r.Context(), identificationID,
 		&shieldlabs.GetIdentificationOptions{Timeout: a.waitTimeout})
 	switch {
 	case errors.Is(err, shieldlabs.ErrValidation):
-		writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": "requestId is not a valid request ID"})
+		writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": "identificationId is not a valid request ID"})
 		return
 	case err != nil:
 		// The verdict could not be read. An unverified request is never
@@ -120,10 +120,10 @@ func (a *app) signup(w http.ResponseWriter, r *http.Request) {
 	// one, the rate-limit marker, a nil device ID, the browser_automation and
 	// javascript_disabled flags, and the dangerous band.
 	verdict := shieldlabs.EvaluateIdentification(ident, shieldlabs.EvaluateOptions{
-		IsReplay: a.usedRequestIDs.seenBefore,
+		IsReplay: a.usedIdentificationIDs.seenBefore,
 	})
 	if !verdict.OK {
-		log.Printf("signup refused: request %s, reason %s, band %q, flag %q", requestID, verdict.Reason, verdict.Band, verdict.Flag)
+		log.Printf("signup refused: request %s, reason %s, band %q, flag %q", identificationID, verdict.Reason, verdict.Band, verdict.Flag)
 		// The reason is returned for the demo; production code usually
 		// shows a generic message instead.
 		writeJSON(w, http.StatusForbidden, map[string]any{"ok": false, "reason": verdict.Reason})
@@ -135,7 +135,7 @@ func (a *app) signup(w http.ResponseWriter, r *http.Request) {
 	// a.client.History.Search(ctx, shieldlabs.LookupDeviceID, ident.DeviceID, nil)
 	// and Identification.AccountUserHID, which skips "anonymous" and the other
 	// User HID values that name no account.
-	log.Printf("signup accepted: request %s, risk score %d (%s)", requestID, ident.RiskScore, verdict.Band)
+	log.Printf("signup accepted: request %s, risk score %d (%s)", identificationID, ident.RiskScore, verdict.Band)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
@@ -158,12 +158,12 @@ func (a *app) webhook(w http.ResponseWriter, r *http.Request) {
 
 	switch e := event.(type) {
 	case *webhook.IdentificationScoredEvent:
-		if a.deliveries.seenBefore(e.Data.RequestID) {
-			log.Printf("webhook: request %s already handled", e.Data.RequestID)
+		if a.deliveries.seenBefore(e.Data.IdentificationID) {
+			log.Printf("webhook: request %s already handled", e.Data.IdentificationID)
 			break
 		}
 		log.Printf("webhook: request %s scored %d (%s), device %s, flags automation=%v vpn=%v",
-			e.Data.RequestID, e.Data.RiskScore, e.Data.Band(), e.Data.DeviceID,
+			e.Data.IdentificationID, e.Data.RiskScore, e.Data.Band(), e.Data.DeviceID,
 			e.Data.DetectionFlags.BrowserAutomation, e.Data.DetectionFlags.VPN)
 	case *webhook.PingEvent:
 		log.Print("webhook: ping received")
@@ -173,20 +173,20 @@ func (a *app) webhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// readRequestID accepts a JSON body {"requestId": "..."} or a form field
-// named requestId.
-func readRequestID(w http.ResponseWriter, r *http.Request) string {
+// readIdentificationID accepts a JSON body {"identificationId": "..."} or a form field
+// named identificationId.
+func readIdentificationID(w http.ResponseWriter, r *http.Request) string {
 	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		var body struct {
-			RequestID string `json:"requestId"`
+			IdentificationID string `json:"identificationId"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return ""
 		}
-		return strings.TrimSpace(body.RequestID)
+		return strings.TrimSpace(body.IdentificationID)
 	}
-	return strings.TrimSpace(r.FormValue("requestId"))
+	return strings.TrimSpace(r.FormValue("identificationId"))
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
