@@ -207,18 +207,18 @@ type Signal struct {
 type DetectionFlags struct {
 	VPN                bool `json:"vpn"`
 	Proxy              bool `json:"proxy"`
-	PrivacyRelay       bool `json:"privacy_relay"`
+	PrivacyRelay       bool `json:"private_relay"`
 	CheckIncomplete    bool `json:"check_incomplete"`
-	StunNotChecked     bool `json:"stun_not_checked"`
+	StunNotChecked     bool `json:"network_check_incomplete"`
 	OSNotDetected      bool `json:"os_not_detected"`
 	TimezoneMismatch   bool `json:"timezone_mismatch"`
 	JavaScriptDisabled bool `json:"javascript_disabled"`
 	OSMismatch         bool `json:"os_mismatch"`
 	IPMismatch         bool `json:"ip_mismatch"`
-	LatencyTest        bool `json:"ws_tcp_latency"`
+	LatencyTest        bool `json:"latency_test"`
 	AntiDetectBrowser  bool `json:"anti_detect_browser"`
 	DeviceSpoofing     bool `json:"device_spoofing"`
-	BannedIP           bool `json:"rate_limited"`
+	BannedIP           bool `json:"banned_ip"`
 	Incognito          bool `json:"incognito"`
 	SearchBot          bool `json:"search_bot"`
 	AIBot              bool `json:"ai_bot"`
@@ -232,18 +232,18 @@ type DetectionFlags struct {
 const (
 	FlagVPN                = "vpn"
 	FlagProxy              = "proxy"
-	FlagPrivacyRelay       = "privacy_relay"
+	FlagPrivacyRelay       = "private_relay"
 	FlagCheckIncomplete    = "check_incomplete"
-	FlagStunNotChecked     = "stun_not_checked"
+	FlagStunNotChecked     = "network_check_incomplete"
 	FlagOSNotDetected      = "os_not_detected"
 	FlagTimezoneMismatch   = "timezone_mismatch"
 	FlagJavaScriptDisabled = "javascript_disabled"
 	FlagOSMismatch         = "os_mismatch"
 	FlagIPMismatch         = "ip_mismatch"
-	FlagLatencyTest        = "ws_tcp_latency"
+	FlagLatencyTest        = "latency_test"
 	FlagAntiDetectBrowser  = "anti_detect_browser"
 	FlagDeviceSpoofing     = "device_spoofing"
-	FlagBannedIP           = "rate_limited"
+	FlagBannedIP           = "banned_ip"
 	FlagIncognito          = "incognito"
 	FlagSearchBot          = "search_bot"
 	FlagAIBot              = "ai_bot"
@@ -271,11 +271,11 @@ func (f *DetectionFlags) field(name string) *bool {
 		return &f.VPN
 	case FlagProxy:
 		return &f.Proxy
-	case FlagPrivacyRelay:
+	case FlagPrivacyRelay, "privacy_relay":
 		return &f.PrivacyRelay
 	case FlagCheckIncomplete:
 		return &f.CheckIncomplete
-	case FlagStunNotChecked:
+	case FlagStunNotChecked, "stun_not_checked":
 		return &f.StunNotChecked
 	case FlagOSNotDetected:
 		return &f.OSNotDetected
@@ -287,13 +287,13 @@ func (f *DetectionFlags) field(name string) *bool {
 		return &f.OSMismatch
 	case FlagIPMismatch:
 		return &f.IPMismatch
-	case FlagLatencyTest:
+	case FlagLatencyTest, "ws_tcp_latency":
 		return &f.LatencyTest
 	case FlagAntiDetectBrowser:
 		return &f.AntiDetectBrowser
 	case FlagDeviceSpoofing:
 		return &f.DeviceSpoofing
-	case FlagBannedIP:
+	case FlagBannedIP, "rate_limited":
 		return &f.BannedIP
 	case FlagIncognito:
 		return &f.Incognito

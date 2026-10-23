@@ -17,17 +17,17 @@ const (
 	SignalProxyRoutedAntidetect  = "proxy_routed_antidetect"
 	SignalPortScanRoutedViaProxy = "port_scan_routed_via_proxy"
 	SignalBrowserAutomation      = "browser_automation"
-	SignalStunNotChecked         = "stun_not_checked"
+	SignalStunNotChecked         = "network_check_incomplete"
 	SignalStunLateCorrection     = "stun_late_correction"
 	SignalOSNotDetected          = "os_not_detected"
 	SignalBrowserVPNProxy        = "browser_vpn_proxy"
 	SignalVPN                    = "vpn"
-	SignalPrivacyRelay           = "privacy_relay"
+	SignalPrivacyRelay           = "private_relay"
 	SignalProxy                  = "proxy"
 	SignalDatacenterIP           = "datacenter_ip"
 	SignalAbuser                 = "abuser"
 	SignalTimezoneMismatch       = "timezone_mismatch"
-	SignalRateLimited            = "rate_limited"
+	SignalRateLimited            = "banned_ip"
 )
 
 var exactSignalSlugs = map[string]string{
@@ -53,7 +53,7 @@ var prefixSignalSlugs = []struct{ prefix, slug string }{
 	{"Os_mismatch", SignalOSMismatch},
 	{"OS mismatch2", SignalOSMismatch},
 	{"TCP handshake", "tcp_handshake_v2"},
-	{"Latency test", "ws_tcp_latency"},
+	{"Latency test", "latency_test"},
 	{"JavaScript disabled", SignalJavaScriptDisabled},
 }
 
