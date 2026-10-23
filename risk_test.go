@@ -39,11 +39,11 @@ func TestRiskBandCases(t *testing.T) {
 
 func freshIdentification(now time.Time) *Identification {
 	return &Identification{
-		RequestID:  testRequestID,
-		DeviceID:   "ac7c303d-971b-41d1-8e25-cd5b46b46aed",
-		RiskScore:  10,
-		ObservedAt: now.Add(-30 * time.Second),
-		Source:     SourceHistory,
+		IdentificationID: testIdentificationID,
+		DeviceID:         "ac7c303d-971b-41d1-8e25-cd5b46b46aed",
+		RiskScore:        10,
+		ObservedAt:       now.Add(-30 * time.Second),
+		Source:           SourceHistory,
 	}
 }
 
@@ -85,7 +85,7 @@ func TestEvaluateIdentificationMissingAndReplay(t *testing.T) {
 	calls := 0
 	isReplay := func(id string) bool {
 		calls++
-		return id == testRequestID
+		return id == testIdentificationID
 	}
 	if got := EvaluateIdentification(nil, EvaluateOptions{IsReplay: isReplay}); got != (Evaluation{Reason: ReasonMissing}) {
 		t.Errorf("missing: %+v", got)
@@ -100,7 +100,7 @@ func TestEvaluateIdentificationMissingAndReplay(t *testing.T) {
 		t.Errorf("replay is checked before freshness: %+v", got)
 	}
 	other := freshIdentification(now)
-	other.RequestID = "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"
+	other.IdentificationID = "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"
 	if got := EvaluateIdentification(other, EvaluateOptions{IsReplay: isReplay}); !got.OK {
 		t.Errorf("a new request ID with the real clock: %+v", got)
 	}

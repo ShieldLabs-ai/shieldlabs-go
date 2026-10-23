@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	testAPIKey    = "sec_abcd1234-efgh5678-ijkl9012"
-	testSecretKey = "0123456789abcdef0123456789abcdef"
-	testRequestID = "02f1d973-84db-4156-a7f7-e799e6bf389b"
+	testAPIKey           = "sec_abcd1234-efgh5678-ijkl9012"
+	testSecretKey        = "0123456789abcdef0123456789abcdef"
+	testIdentificationID = "02f1d973-84db-4156-a7f7-e799e6bf389b"
 )
 
 // readFixture returns a file from testdata/.
@@ -193,9 +193,9 @@ func normalizationCases(t *testing.T) []normalizationCase {
 	return f.Cases
 }
 
-// expectedByRequestID returns the expected Identification objects of one
+// expectedByIdentificationID returns the expected Identification objects of one
 // source, keyed by request ID.
-func expectedByRequestID(t *testing.T, source string) map[string]json.RawMessage {
+func expectedByIdentificationID(t *testing.T, source string) map[string]json.RawMessage {
 	t.Helper()
 	out := map[string]json.RawMessage{}
 	for _, c := range normalizationCases(t) {
@@ -203,12 +203,12 @@ func expectedByRequestID(t *testing.T, source string) map[string]json.RawMessage
 			continue
 		}
 		var probe struct {
-			RequestID string `json:"request_id"`
+			IdentificationID string `json:"identification_id"`
 		}
 		if err := json.Unmarshal(c.Expected, &probe); err != nil {
 			t.Fatal(err)
 		}
-		out[probe.RequestID] = c.Expected
+		out[probe.IdentificationID] = c.Expected
 	}
 	return out
 }

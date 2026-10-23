@@ -101,7 +101,7 @@ func TestParseRejectsNonObjects(t *testing.T) {
 
 func TestHistoryRowTolerance(t *testing.T) {
 	row := `{
-		"request_id": "7C1E2F4A-3B6D-4E8F-9A0B-1C2D3E4F5A6B",
+		"identification_id": "7C1E2F4A-3B6D-4E8F-9A0B-1C2D3E4F5A6B",
 		"score": 55.0,
 		"score_details": "[1, {\"Value\": 12.5, \"Description\": \"Is VPN\"}, {\"Value\": true, \"Description\": \"Is tor\"}, {\"Value\": 30, \"Description\": 7}, {\"Value\": 5}]",
 		"created_at": "  2026-09-30T08:00:00.123456789+02:00 ",
@@ -152,7 +152,7 @@ func TestHistoryRowTolerance(t *testing.T) {
 	if ident.DetectionFlags.IPMismatch {
 		t.Error("ip_mismatch needs both addresses")
 	}
-	if ident.RequestID != "7C1E2F4A-3B6D-4E8F-9A0B-1C2D3E4F5A6B" {
+	if ident.IdentificationID != "7C1E2F4A-3B6D-4E8F-9A0B-1C2D3E4F5A6B" {
 		t.Error("identifiers must be kept as received")
 	}
 }
