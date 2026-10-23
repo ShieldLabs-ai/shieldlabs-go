@@ -78,7 +78,7 @@ func TestSignalSlugExtraRules(t *testing.T) {
 		"Mixed/Case - Words":        "mixed_case_words",
 		"\x1c Separator (x)":        "separator",
 		"Sticky verdict:  Is VPN  ": "is_vpn",
-		"Latency test":              "ws_tcp_latency",
+		"Latency test":              "latency_test",
 		"Is tor ":                   "is_tor",
 	}
 	for in, want := range tests {
