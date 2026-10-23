@@ -32,7 +32,7 @@ func ExampleConstructEvent() {
 		if e, ok := event.(*webhook.IdentificationScoredEvent); ok {
 			// Keep this idempotent on the request ID: a later server release
 			// retries failed deliveries with identical bytes.
-			log.Printf("request %s: risk score %d (%s)", e.Data.RequestID, e.Data.RiskScore, e.Data.Band())
+			log.Printf("request %s: risk score %d (%s)", e.Data.IdentificationID, e.Data.RiskScore, e.Data.Band())
 		}
 		w.WriteHeader(http.StatusOK) // acknowledge within one second
 	})

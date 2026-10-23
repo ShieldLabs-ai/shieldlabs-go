@@ -24,7 +24,7 @@ var _ MappedNullable = &IdentificationScoredData{}
 // IdentificationScoredData The scored identification. Every key is always present (no key is ever omitted); only `user_hid` can be `null`.
 type IdentificationScoredData struct {
 	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
-	RequestId string `json:"request_id"`
+	IdentificationId string `json:"identification_id"`
 	// Server-side visitor identifier (UUID v5). It is sticky to the device: a new cookie on a known device keeps the existing visitor ID, so clearing cookies usually does not change it. The nil UUID appears on identifications without usable device data, such as rate-limit marker rows.
 	VisitorId string `json:"visitor_id"`
 	// Server-side device identifier (UUID v5). It survives cleared cookies and private windows. The nil UUID `00000000-0000-0000-0000-000000000000` means that no usable device signals were collected (for example on rate-limit marker rows): never group identifications by it.
@@ -65,9 +65,9 @@ type _IdentificationScoredData IdentificationScoredData
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIdentificationScoredData(requestId string, visitorId string, deviceId string, sessionId string, cookieId string, userHid NullableString, domain string, publicIp IpInfo, localIp IpInfo, connectionType string, os string, browser string, deviceType string, trafficSource TrafficSource, riskScore int32, signals []Signal, detectionFlags DetectionFlags, observedAt time.Time) *IdentificationScoredData {
+func NewIdentificationScoredData(identificationId string, visitorId string, deviceId string, sessionId string, cookieId string, userHid NullableString, domain string, publicIp IpInfo, localIp IpInfo, connectionType string, os string, browser string, deviceType string, trafficSource TrafficSource, riskScore int32, signals []Signal, detectionFlags DetectionFlags, observedAt time.Time) *IdentificationScoredData {
 	this := IdentificationScoredData{}
-	this.RequestId = requestId
+	this.IdentificationId = identificationId
 	this.VisitorId = visitorId
 	this.DeviceId = deviceId
 	this.SessionId = sessionId
@@ -96,28 +96,28 @@ func NewIdentificationScoredDataWithDefaults() *IdentificationScoredData {
 	return &this
 }
 
-// GetRequestId returns the RequestId field value
-func (o *IdentificationScoredData) GetRequestId() string {
+// GetIdentificationId returns the IdentificationId field value
+func (o *IdentificationScoredData) GetIdentificationId() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.RequestId
+	return o.IdentificationId
 }
 
-// GetRequestIdOk returns a tuple with the RequestId field value
+// GetIdentificationIdOk returns a tuple with the IdentificationId field value
 // and a boolean to check if the value has been set.
-func (o *IdentificationScoredData) GetRequestIdOk() (*string, bool) {
+func (o *IdentificationScoredData) GetIdentificationIdOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RequestId, true
+	return &o.IdentificationId, true
 }
 
-// SetRequestId sets field value
-func (o *IdentificationScoredData) SetRequestId(v string) {
-	o.RequestId = v
+// SetIdentificationId sets field value
+func (o *IdentificationScoredData) SetIdentificationId(v string) {
+	o.IdentificationId = v
 }
 
 // GetVisitorId returns the VisitorId field value
@@ -540,7 +540,7 @@ func (o IdentificationScoredData) MarshalJSON() ([]byte, error) {
 
 func (o IdentificationScoredData) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["request_id"] = o.RequestId
+	toSerialize["identification_id"] = o.IdentificationId
 	toSerialize["visitor_id"] = o.VisitorId
 	toSerialize["device_id"] = o.DeviceId
 	toSerialize["session_id"] = o.SessionId
@@ -566,7 +566,7 @@ func (o *IdentificationScoredData) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"request_id",
+		"identification_id",
 		"visitor_id",
 		"device_id",
 		"session_id",

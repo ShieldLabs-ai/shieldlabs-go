@@ -111,7 +111,7 @@ func TestClientIsSafeForConcurrentUse(t *testing.T) {
 	errs := make(chan error, 20)
 	for i := 0; i < 20; i++ {
 		go func() {
-			_, err := c.Identifications.Get(context.Background(), testRequestID, nil)
+			_, err := c.Identifications.Get(context.Background(), testIdentificationID, nil)
 			errs <- err
 		}()
 	}

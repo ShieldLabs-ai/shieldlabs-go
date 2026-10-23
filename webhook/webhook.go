@@ -13,7 +13,7 @@
 // 1-second timeout and no retries: answer with a 2xx status within one second
 // and do slow work afterwards. A later server release retries failed
 // deliveries, and a retry resends identical bytes, so make your handler
-// idempotent on the identification's request ID (Data.RequestID). Use the
+// idempotent on the identification's request ID (Data.IdentificationID). Use the
 // History API for guaranteed reads and for the latest state of an
 // identification: a failed delivery is not sent again, and a History row can
 // be refined after its webhook was sent.
@@ -145,7 +145,7 @@ func (e *Envelope) Type() string { return e.EventType }
 func (e *Envelope) isEvent() {}
 
 // IdentificationScoredEvent is an identification.scored delivery. Make your
-// handler idempotent on Data.RequestID.
+// handler idempotent on Data.IdentificationID.
 type IdentificationScoredEvent struct {
 	Envelope
 	// Data is the scored identification. It is never nil.

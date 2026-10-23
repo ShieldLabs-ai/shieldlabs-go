@@ -22,7 +22,7 @@ var _ MappedNullable = &HistoryRow{}
 // HistoryRow One identification as stored, in its latest version. It describes the same identification as a webhook `data` object, with different field names:  | Webhook `data` | History row | |---|---| | `risk_score` | `score` | | `signals` | `score_details` (JSON-encoded string, zero weights included) | | `detection_flags` | the `is_*` columns and `check_incomplete` (each column names its flag) | | `detection_flags.browser_vpn_proxy` | derive it: `connection_type == \"browser_vpn_proxy\"` | | `domain` | `site_domain` when present, otherwise `domain` | | `public_ip` | `ip` (`0.0.0.0` instead of `\"\"`) and `country` | | `local_ip` | `webrtc_leak_ip` and `webrtc_leak_country` when `webrtc_leak_source` is set and not `none`, otherwise `web_rtc_ip` and `web_rtc_country` | | `traffic_source` | `traffic_channel`, `referrer_domain`, `entry_url`, `click_id_type`, `utm_*` (omitted when empty) | | `observed_at` (when scoring finished) | `created_at` (when the identification was made) |  The `ip_mismatch` flag has no column. Rows also carry diagnostic network fields (TCP, MTU and STUN measurements) that are not part of the stable contract: ignore fields you do not know.
 type HistoryRow struct {
 	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
-	RequestId string `json:"request_id"`
+	IdentificationId string `json:"identification_id"`
 	// One visit on one origin (UUID v4 created in the browser), shared by the open tabs of that origin. The next visit after the last tab closes gets a new session ID. The nil UUID appears on rate-limit marker rows.
 	SessionId string `json:"session_id"`
 	// First-party browser identifier kept by the ShieldLabs agent (UUID v4). A missing or malformed value is stored as the nil UUID.
@@ -136,9 +136,9 @@ type _HistoryRow HistoryRow
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewHistoryRow(requestId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, scoreDetails string, createdAt string, ver int64, webRtcIp string, webRtcCountry string, webRtcConnectionType string, webrtcLeakIp string, webrtcLeakCountry string, webrtcLeakConnectionType string, webrtcLeakSource string, isVpn bool, isTor bool, isProxy bool, isDatacenter bool, isAbuser bool, isPrivacyRelay bool, isStunNotChecked bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool) *HistoryRow {
+func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, scoreDetails string, createdAt string, ver int64, webRtcIp string, webRtcCountry string, webRtcConnectionType string, webrtcLeakIp string, webrtcLeakCountry string, webrtcLeakConnectionType string, webrtcLeakSource string, isVpn bool, isTor bool, isProxy bool, isDatacenter bool, isAbuser bool, isPrivacyRelay bool, isStunNotChecked bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool) *HistoryRow {
 	this := HistoryRow{}
-	this.RequestId = requestId
+	this.IdentificationId = identificationId
 	this.SessionId = sessionId
 	this.CookieId = cookieId
 	this.Domain = domain
@@ -189,28 +189,28 @@ func NewHistoryRowWithDefaults() *HistoryRow {
 	return &this
 }
 
-// GetRequestId returns the RequestId field value
-func (o *HistoryRow) GetRequestId() string {
+// GetIdentificationId returns the IdentificationId field value
+func (o *HistoryRow) GetIdentificationId() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.RequestId
+	return o.IdentificationId
 }
 
-// GetRequestIdOk returns a tuple with the RequestId field value
+// GetIdentificationIdOk returns a tuple with the IdentificationId field value
 // and a boolean to check if the value has been set.
-func (o *HistoryRow) GetRequestIdOk() (*string, bool) {
+func (o *HistoryRow) GetIdentificationIdOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RequestId, true
+	return &o.IdentificationId, true
 }
 
-// SetRequestId sets field value
-func (o *HistoryRow) SetRequestId(v string) {
-	o.RequestId = v
+// SetIdentificationId sets field value
+func (o *HistoryRow) SetIdentificationId(v string) {
+	o.IdentificationId = v
 }
 
 // GetSessionId returns the SessionId field value
@@ -1575,7 +1575,7 @@ func (o HistoryRow) MarshalJSON() ([]byte, error) {
 
 func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["request_id"] = o.RequestId
+	toSerialize["identification_id"] = o.IdentificationId
 	toSerialize["session_id"] = o.SessionId
 	toSerialize["cookie_id"] = o.CookieId
 	toSerialize["domain"] = o.Domain
@@ -1667,7 +1667,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"request_id",
+		"identification_id",
 		"session_id",
 		"cookie_id",
 		"domain",
@@ -1736,7 +1736,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 	additionalProperties := make(map[string]interface{})
 
 	if err = json.Unmarshal(data, &additionalProperties); err == nil {
-		delete(additionalProperties, "request_id")
+		delete(additionalProperties, "identification_id")
 		delete(additionalProperties, "session_id")
 		delete(additionalProperties, "cookie_id")
 		delete(additionalProperties, "domain")

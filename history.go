@@ -16,7 +16,7 @@ import (
 // LookupType selects the identifier a History search matches on.
 type LookupType string
 
-// The seven History lookup types.
+// History lookup types. request_id is a legacy alias of identification_id.
 const (
 	// LookupIP matches the public IP address, written as a dotted IPv4
 	// address.
@@ -25,7 +25,9 @@ const (
 	LookupUserHID LookupType = "user_hid"
 	// LookupVisitorID matches the visitor ID (UUID).
 	LookupVisitorID LookupType = "visitor_id"
-	// LookupRequestID matches the request ID (UUID).
+	// LookupIdentificationID matches one identification (UUID).
+	LookupIdentificationID LookupType = "identification_id"
+	// LookupRequestID is the legacy alias of LookupIdentificationID.
 	LookupRequestID LookupType = "request_id"
 	// LookupDeviceID matches the device ID (UUID).
 	LookupDeviceID LookupType = "device_id"
@@ -80,7 +82,8 @@ type HistoryService struct {
 //
 // Arguments are validated on the client before anything is sent, so that a
 // typo never turns into an unfiltered or failing query: the lookup type must
-// be one of the seven Lookup constants, UUID values must be UUIDs (sent
+// be one of the Lookup constants. request_id is a legacy alias of
+// identification_id. UUID values must be UUIDs (sent
 // lowercase), an IP must be a dotted IPv4 address, Limit must be 0 to 100 and
 // Offset must not be negative. A User HID is matched exactly; it must be
 // non-empty, valid UTF-8 text without "/" and other than "." and "..", because
@@ -122,7 +125,7 @@ func (s *HistoryService) Search(ctx context.Context, lookup LookupType, value st
 //		if err != nil {
 //			return err
 //		}
-//		fmt.Println(ident.RequestID, ident.RiskScore)
+//		fmt.Println(ident.IdentificationID, ident.RiskScore)
 //	}
 func (s *HistoryService) All(ctx context.Context, lookup LookupType, value string, opts *HistoryIterateOptions) iter.Seq2[*Identification, error] {
 	return func(yield func(*Identification, error) bool) {
@@ -184,11 +187,11 @@ func (s *HistoryService) All(ctx context.Context, lookup LookupType, value strin
 // some rate-limit marker rows) are compared on their whole identity instead,
 // so that distinct rows are never dropped.
 func dedupeKey(ident *Identification) string {
-	if ident.RequestID != "" && ident.RequestID != NilUUID {
-		return ident.RequestID
+	if ident.IdentificationID != "" && ident.IdentificationID != NilUUID {
+		return ident.IdentificationID
 	}
 	return strings.Join([]string{
-		ident.RequestID,
+		ident.IdentificationID,
 		str(ident.Raw["created_at"]),
 		str(ident.Raw["ver"]),
 		str(ident.Raw["ip"]),
@@ -245,7 +248,7 @@ func parseHistoryPage(resp *apiResponse) (*HistoryPage, error) {
 // validateLookup checks a lookup type and value and returns the value to send.
 func validateLookup(lookup LookupType, value string) (string, error) {
 	switch lookup {
-	case LookupRequestID, LookupDeviceID, LookupVisitorID, LookupSessionID, LookupCookieID:
+	case LookupIdentificationID, LookupRequestID, LookupDeviceID, LookupVisitorID, LookupSessionID, LookupCookieID:
 		if !uuidRE.MatchString(value) {
 			return "", validationError("%s must be a UUID such as 3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53", lookup)
 		}
@@ -269,7 +272,7 @@ func validateLookup(lookup LookupType, value string) (string, error) {
 		}
 		return value, nil
 	}
-	return "", validationError("unknown lookup type %q: use one of ip, user_hid, visitor_id, request_id, device_id, session_id, cookie_id", string(lookup))
+	return "", validationError("unknown lookup type %q: use one of ip, user_hid, visitor_id, identification_id, request_id, device_id, session_id, cookie_id", string(lookup))
 }
 
 // escapePathValue escapes a validated lookup value for the request path in

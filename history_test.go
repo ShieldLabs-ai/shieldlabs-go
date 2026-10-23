@@ -27,13 +27,13 @@ func TestHistorySearchFixturePage(t *testing.T) {
 	if page.Total != 37 || len(page.Data) != 5 {
 		t.Fatalf("page: total %d, %d rows", page.Total, len(page.Data))
 	}
-	expected := expectedByRequestID(t, "history")
+	expected := expectedByIdentificationID(t, "history")
 	for _, ident := range page.Data {
-		want, ok := expected[ident.RequestID]
+		want, ok := expected[ident.IdentificationID]
 		if !ok {
-			t.Fatalf("no expected identification for %s", ident.RequestID)
+			t.Fatalf("no expected identification for %s", ident.IdentificationID)
 		}
-		assertMatchesFixture(t, ident.RequestID, ident, want)
+		assertMatchesFixture(t, ident.IdentificationID, ident, want)
 	}
 
 	req := srv.Request(0)
@@ -191,7 +191,7 @@ func TestHistorySearchValidation(t *testing.T) {
 		{"empty type", "", uuid, nil},
 		{"bad uuid", LookupDeviceID, "abc", nil},
 		{"uuid with braces", LookupVisitorID, "{" + uuid + "}", nil},
-		{"uuid without dashes", LookupRequestID, strings.ReplaceAll(uuid, "-", ""), nil},
+		{"uuid without dashes", LookupIdentificationID, strings.ReplaceAll(uuid, "-", ""), nil},
 		{"uuid with spaces", LookupSessionID, " " + uuid, nil},
 		{"empty cookie id", LookupCookieID, "", nil},
 		{"ipv6", LookupIP, "2001:db8::1", nil},
@@ -263,8 +263,8 @@ func (p *pagedServer) handler(w http.ResponseWriter, r *http.Request, n int) {
 	}
 }
 
-func row(requestID string, extra ...string) string {
-	fields := append([]string{fmt.Sprintf(`"request_id":%q`, requestID), `"created_at":"2026-09-30 12:00:00.000"`}, extra...)
+func row(identificationID string, extra ...string) string {
+	fields := append([]string{fmt.Sprintf(`"identification_id":%q`, identificationID), `"created_at":"2026-09-30 12:00:00.000"`}, extra...)
 	return "{" + strings.Join(fields, ",") + "}"
 }
 
@@ -277,7 +277,7 @@ func collect(t *testing.T, c *Client, opts *HistoryIterateOptions) ([]string, er
 		if err != nil {
 			return ids, err
 		}
-		ids = append(ids, ident.RequestID)
+		ids = append(ids, ident.IdentificationID)
 	}
 	return ids, nil
 }
@@ -337,7 +337,7 @@ func TestHistoryAllDeduplicatesShiftedRows(t *testing.T) {
 	}
 }
 
-func TestHistoryAllKeepsDistinctRowsWithoutRequestID(t *testing.T) {
+func TestHistoryAllKeepsDistinctRowsWithoutIdentificationID(t *testing.T) {
 	p := &pagedServer{rows: []string{
 		row(NilUUID, `"ver":1`, `"score":999`),
 		row(NilUUID, `"ver":2`, `"score":999`),

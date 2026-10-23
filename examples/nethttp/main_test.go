@@ -44,7 +44,7 @@ func historyServer(t *testing.T, rows map[string]string) *httptest.Server {
 			return
 		}
 		created := time.Now().UTC().Format("2006-01-02 15:04:05.000")
-		_, _ = fmt.Fprintf(w, `{"data":[{"request_id":%q,"device_id":"ac7c303d-971b-41d1-8e25-cd5b46b46aed","created_at":%q%s}],"total":1}`, id, created, extra)
+		_, _ = fmt.Fprintf(w, `{"data":[{"identification_id":%q,"device_id":"ac7c303d-971b-41d1-8e25-cd5b46b46aed","created_at":%q%s}],"total":1}`, id, created, extra)
 	}))
 	t.Cleanup(srv.Close)
 	return srv
@@ -94,13 +94,13 @@ func TestSignupPolicy(t *testing.T) {
 		wantStatus int
 		wantReason string
 	}{
-		{"trusted", `{"requestId":"` + trusted + `"}`, 200, ""},
-		{"reuse", `{"requestId":"` + trusted + `"}`, 403, "replayed"},
-		{"dangerous band", `{"requestId":"` + dangerous + `"}`, 403, "blocked_band"},
-		{"automation flag", `{"requestId":"` + automation + `"}`, 403, "blocked_flag"},
-		{"rate limited", `{"requestId":"` + limited + `"}`, 403, "rate_limited"},
-		{"missing", `{"requestId":"` + missing + `"}`, 403, "missing"},
-		{"invalid id", `{"requestId":"abc"}`, 400, ""},
+		{"trusted", `{"identificationId":"` + trusted + `"}`, 200, ""},
+		{"reuse", `{"identificationId":"` + trusted + `"}`, 403, "replayed"},
+		{"dangerous band", `{"identificationId":"` + dangerous + `"}`, 403, "blocked_band"},
+		{"automation flag", `{"identificationId":"` + automation + `"}`, 403, "blocked_flag"},
+		{"rate limited", `{"identificationId":"` + limited + `"}`, 403, "rate_limited"},
+		{"missing", `{"identificationId":"` + missing + `"}`, 403, "missing"},
+		{"invalid id", `{"identificationId":"abc"}`, 400, ""},
 		{"no id", `{}`, 400, ""},
 		{"bad json", `{`, 400, ""},
 	}
@@ -114,7 +114,7 @@ func TestSignupPolicy(t *testing.T) {
 		}
 	}
 
-	status, out := postSignup(t, h, url.Values{"requestId": {formPosted}}.Encode(), "application/x-www-form-urlencoded")
+	status, out := postSignup(t, h, url.Values{"identificationId": {formPosted}}.Encode(), "application/x-www-form-urlencoded")
 	if status != 200 || out["ok"] != true {
 		t.Errorf("form post: %d %v", status, out)
 	}
@@ -130,7 +130,7 @@ func TestSignupUnverifiedWhenTheAPIFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := newApp(client, []string{testSecret}, time.Second).routes()
-	status, out := postSignup(t, h, `{"requestId":"11111111-1111-4111-8111-111111111111"}`, "application/json")
+	status, out := postSignup(t, h, `{"identificationId":"11111111-1111-4111-8111-111111111111"}`, "application/json")
 	if status != http.StatusServiceUnavailable || out["reason"] != "unverified" {
 		t.Errorf("status %d %v", status, out)
 	}

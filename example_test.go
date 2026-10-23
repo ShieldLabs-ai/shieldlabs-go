@@ -23,10 +23,10 @@ func ExampleIdentificationsService_Get() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// requestID comes from your page, sent together with the protected action.
-	requestID := "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"
+	// identificationID comes from your page, sent together with the protected action.
+	identificationID := "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53"
 
-	ident, err := client.Identifications.Get(context.Background(), requestID, nil)
+	ident, err := client.Identifications.Get(context.Background(), identificationID, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -110,17 +110,17 @@ func ExampleRiskBand() {
 func ExampleEvaluateIdentification() {
 	now := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
 	ident := &shieldlabs.Identification{
-		RequestID:  "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53",
-		DeviceID:   "ac7c303d-971b-41d1-8e25-cd5b46b46aed",
-		RiskScore:  65,
-		ObservedAt: now.Add(-20 * time.Second),
+		IdentificationID: "3f2b8c1e-9d4a-4e6b-8a7c-2d1e0f9b6a53",
+		DeviceID:         "ac7c303d-971b-41d1-8e25-cd5b46b46aed",
+		RiskScore:        65,
+		ObservedAt:       now.Add(-20 * time.Second),
 	}
 	used := map[string]bool{}
 	verdict := shieldlabs.EvaluateIdentification(ident, shieldlabs.EvaluateOptions{
 		Now: now,
-		IsReplay: func(requestID string) bool {
-			seen := used[requestID]
-			used[requestID] = true
+		IsReplay: func(identificationID string) bool {
+			seen := used[identificationID]
+			used[identificationID] = true
 			return seen
 		},
 	})

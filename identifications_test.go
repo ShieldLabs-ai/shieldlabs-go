@@ -126,11 +126,11 @@ func TestGetWaitsWithBackoffSchedule(t *testing.T) {
 		writeJSON(w, 200, page)
 	})
 	c, clk := newTestClient(t, srv.URL)
-	ident, err := c.Identifications.Get(context.Background(), testRequestID, nil)
+	ident, err := c.Identifications.Get(context.Background(), testIdentificationID, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ident == nil || ident.RequestID != testRequestID || ident.Source != SourceHistory {
+	if ident == nil || ident.IdentificationID != testIdentificationID || ident.Source != SourceHistory {
 		t.Fatalf("ident = %+v", ident)
 	}
 	if got, want := clk.Sleeps(), ms(250, 500, 1000, 1500, 2000); !sameDurations(got, want) {
@@ -140,7 +140,7 @@ func TestGetWaitsWithBackoffSchedule(t *testing.T) {
 		t.Errorf("requests = %d, want 6", srv.Count())
 	}
 	req := srv.Request(0)
-	if got := req.URL.EscapedPath(); got != "/api/v1/history/request_id/"+testRequestID {
+	if got := req.URL.EscapedPath(); got != "/api/v1/history/identification_id/"+testIdentificationID {
 		t.Errorf("path %s", got)
 	}
 	if q := req.URL.Query(); q.Get("limit") != "1" || q.Get("offset") != "0" {
@@ -152,7 +152,7 @@ func TestGetZeroValueOptionsWait(t *testing.T) {
 	for _, opts := range []*GetIdentificationOptions{nil, {}, {Timeout: 5 * time.Second}, {PollInterval: 500 * time.Millisecond}} {
 		clk := newFakeClock()
 		c, st := newScriptedClient(t, clk, []step{empty, found(t)})
-		ident, err := c.Identifications.Get(context.Background(), testRequestID, opts)
+		ident, err := c.Identifications.Get(context.Background(), testIdentificationID, opts)
 		if err != nil || ident == nil {
 			t.Fatalf("opts %+v: got %v, %v", opts, ident, err)
 		}
@@ -165,12 +165,12 @@ func TestGetZeroValueOptionsWait(t *testing.T) {
 func TestGetNoWaitMakesOneLookup(t *testing.T) {
 	clk := newFakeClock()
 	c, st := newScriptedClient(t, clk, []step{empty, found(t)})
-	ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{NoWait: true})
+	ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{NoWait: true})
 	if err != nil || ident != nil {
 		t.Fatalf("got %v, %v; want nil, nil", ident, err)
 	}
 	// Timeout and PollInterval only apply while waiting.
-	ident, err = c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{NoWait: true, Timeout: time.Minute, PollInterval: time.Second})
+	ident, err = c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{NoWait: true, Timeout: time.Minute, PollInterval: time.Second})
 	if err != nil || ident == nil {
 		t.Fatalf("got %v, %v", ident, err)
 	}
@@ -188,7 +188,7 @@ func TestGetNoWaitMakesOneLookup(t *testing.T) {
 func TestGetNoWaitRetriesLikeHistoryRequests(t *testing.T) {
 	clk := newFakeClock()
 	c, _ := newScriptedClient(t, clk, []step{rateLimited, empty})
-	if _, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{NoWait: true}); err != nil {
+	if _, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{NoWait: true}); err != nil {
 		t.Fatal(err)
 	}
 	// The client retries a 429 without Retry-After after at least one second.
@@ -201,7 +201,7 @@ func TestGetNoWaitRetriesLikeHistoryRequests(t *testing.T) {
 	for _, value := range []string{"0", "Wed, 21 Oct 2015 07:28:00 GMT"} {
 		clk = newFakeClock()
 		c, _ = newScriptedClient(t, clk, []step{retryAfter(value), empty})
-		if _, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{NoWait: true}); err != nil {
+		if _, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{NoWait: true}); err != nil {
 			t.Fatal(err)
 		}
 		if got := clk.Sleeps(); !sameDurations(got, ms(0)) {
@@ -211,7 +211,7 @@ func TestGetNoWaitRetriesLikeHistoryRequests(t *testing.T) {
 
 	clk = newFakeClock()
 	c, st := newScriptedClient(t, clk, []step{serverError})
-	if _, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{NoWait: true}); !errors.Is(err, ErrServer) {
+	if _, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{NoWait: true}); !errors.Is(err, ErrServer) {
 		t.Fatalf("err = %v", err)
 	}
 	// Two retries with backoff (zero jitter in tests).
@@ -223,7 +223,7 @@ func TestGetNoWaitRetriesLikeHistoryRequests(t *testing.T) {
 func TestGetReturnsNilWhenTheLastLookupFindsNothing(t *testing.T) {
 	clk := newFakeClock()
 	c, st := newScriptedClient(t, clk, []step{empty})
-	ident, err := c.Identifications.Get(context.Background(), testRequestID, nil)
+	ident, err := c.Identifications.Get(context.Background(), testIdentificationID, nil)
 	if err != nil || ident != nil {
 		t.Fatalf("got %v, %v; want nil, nil", ident, err)
 	}
@@ -257,7 +257,7 @@ func TestGetLastLookupRunsAtTheDeadline(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, []step{after(clk, tc.latency, empty)})
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: tc.timeout})
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: tc.timeout})
 			if err != nil || ident != nil {
 				t.Fatalf("got %v, %v; want nil, nil", ident, err)
 			}
@@ -278,7 +278,7 @@ func TestGetKeepsPollingThroughTransientErrors(t *testing.T) {
 		rateLimited,
 		found(t),
 	})
-	ident, err := c.Identifications.Get(context.Background(), testRequestID, nil)
+	ident, err := c.Identifications.Get(context.Background(), testIdentificationID, nil)
 	if err != nil || ident == nil {
 		t.Fatalf("got %v, %v", ident, err)
 	}
@@ -297,7 +297,7 @@ func TestGetEachLookupIsOneAttempt(t *testing.T) {
 	// configured.
 	clk := newFakeClock()
 	c, st := newScriptedClient(t, clk, []step{serverError}, WithMaxRetries(5))
-	if _, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: time.Second}); !errors.Is(err, ErrServer) {
+	if _, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: time.Second}); !errors.Is(err, ErrServer) {
 		t.Fatalf("err = %v", err)
 	}
 	if got, want := st.SentAt(), ms(0, 250, 750, 1000); !sameDurations(got, want) {
@@ -335,7 +335,7 @@ func TestGetReturnsTheLastErrorAtTheDeadline(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, tc.steps)
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: tc.timeout})
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: tc.timeout})
 			if ident != nil {
 				t.Fatalf("ident = %+v, want nil", ident)
 			}
@@ -393,7 +393,7 @@ func TestGetLookupAttemptTimeouts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, []step{empty}, tc.opts...)
-			if _, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: 5 * time.Second}); err != nil {
+			if _, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: 5 * time.Second}); err != nil {
 				t.Fatal(err)
 			}
 			got := st.Timeouts()
@@ -423,7 +423,7 @@ func TestGetLastLookupGetsAtLeastOneSecond(t *testing.T) {
 		t.Fatal(err)
 	}
 	start := time.Now()
-	ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: 100 * time.Millisecond})
+	ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: 100 * time.Millisecond})
 	elapsed := time.Since(start)
 	if ident != nil || !errors.Is(err, ErrTimeout) {
 		t.Fatalf("got %v, %v", ident, err)
@@ -447,7 +447,7 @@ func TestGetWithTheRealClock(t *testing.T) {
 		t.Fatal(err)
 	}
 	start := time.Now()
-	ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: 450 * time.Millisecond})
+	ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: 450 * time.Millisecond})
 	elapsed := time.Since(start)
 	if err != nil || ident != nil {
 		t.Fatalf("got %v, %v; want nil, nil", ident, err)
@@ -494,7 +494,7 @@ func TestGetRateLimitWaitsAtLeastOneSecond(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, tc.steps)
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: tc.timeout})
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: tc.timeout})
 			if err != nil || ident == nil {
 				t.Fatalf("got %v, %v", ident, err)
 			}
@@ -539,7 +539,7 @@ func TestGetRetryAfter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, tc.steps)
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: tc.timeout})
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: tc.timeout})
 			if tc.found && (err != nil || ident == nil) {
 				t.Fatalf("got %v, %v", ident, err)
 			}
@@ -578,7 +578,7 @@ func TestGetStopsAtOnce(t *testing.T) {
 			clk := newFakeClock()
 			steps := append(append([]step(nil), tc.steps...), found(t))
 			c, st := newScriptedClient(t, clk, steps)
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, nil)
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, nil)
 			if ident != nil || err == nil || (tc.want != nil && !errors.Is(err, tc.want)) {
 				t.Fatalf("got %v, %v", ident, err)
 			}
@@ -624,7 +624,7 @@ func TestGetCustomPollInterval(t *testing.T) {
 			writeJSON(w, 200, page)
 		})
 		c, clk := newTestClient(t, srv.URL)
-		ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{Timeout: time.Minute, PollInterval: tc.interval})
+		ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{Timeout: time.Minute, PollInterval: tc.interval})
 		if err != nil || ident == nil {
 			t.Fatalf("interval %s: got %v, %v", tc.interval, ident, err)
 		}
@@ -651,7 +651,7 @@ func TestGetFollowsTheLadderOfItsPollInterval(t *testing.T) {
 		t.Run(tc.interval.String(), func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, []step{empty})
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{PollInterval: tc.interval})
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{PollInterval: tc.interval})
 			if err != nil || ident != nil {
 				t.Fatalf("got %v, %v; want nil, nil", ident, err)
 			}
@@ -682,7 +682,7 @@ func TestGetRateLimitKeepsTheLadderOfALongPollInterval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clk := newFakeClock()
 			c, st := newScriptedClient(t, clk, []step{tc.first, empty, found(t)})
-			ident, err := c.Identifications.Get(context.Background(), testRequestID, &GetIdentificationOptions{PollInterval: 3 * time.Second})
+			ident, err := c.Identifications.Get(context.Background(), testIdentificationID, &GetIdentificationOptions{PollInterval: 3 * time.Second})
 			if err != nil || ident == nil {
 				t.Fatalf("got %v, %v", ident, err)
 			}
@@ -701,13 +701,13 @@ func TestGetValidation(t *testing.T) {
 		writeJSON(w, 200, emptyPage)
 	})
 	c, _ := newTestClient(t, srv.URL)
-	for _, id := range []string{"", "abc", "not-a-uuid", testRequestID + "x"} {
+	for _, id := range []string{"", "abc", "not-a-uuid", testIdentificationID + "x"} {
 		if _, err := c.Identifications.Get(context.Background(), id, nil); !errors.Is(err, ErrValidation) {
 			t.Errorf("request ID %q: err = %v", id, err)
 		}
 	}
 	for _, opts := range []*GetIdentificationOptions{{Timeout: -1}, {PollInterval: -time.Second}, {NoWait: true, Timeout: -1}} {
-		if _, err := c.Identifications.Get(context.Background(), testRequestID, opts); !errors.Is(err, ErrValidation) {
+		if _, err := c.Identifications.Get(context.Background(), testIdentificationID, opts); !errors.Is(err, ErrValidation) {
 			t.Errorf("opts %+v: err = %v", opts, err)
 		}
 	}
@@ -718,7 +718,7 @@ func TestGetValidation(t *testing.T) {
 	if _, err := c.Identifications.Get(context.Background(), "02F1D973-84DB-4156-A7F7-E799E6BF389B", &GetIdentificationOptions{NoWait: true}); err != nil {
 		t.Fatal(err)
 	}
-	if got := srv.Request(0).URL.EscapedPath(); got != "/api/v1/history/request_id/"+testRequestID {
+	if got := srv.Request(0).URL.EscapedPath(); got != "/api/v1/history/identification_id/"+testIdentificationID {
 		t.Errorf("path %s", got)
 	}
 }
@@ -730,7 +730,7 @@ func TestGetHonoursContextCancellation(t *testing.T) {
 	c, _ := newTestClient(t, srv.URL)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := c.Identifications.Get(ctx, testRequestID, nil)
+	_, err := c.Identifications.Get(ctx, testIdentificationID, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v", err)
 	}
@@ -738,7 +738,7 @@ func TestGetHonoursContextCancellation(t *testing.T) {
 	// Cancelled during a wait.
 	ctx2, cancel2 := context.WithCancel(context.Background())
 	c.t.clock = &cancellingClock{fakeClock: newFakeClock(), cancel: cancel2}
-	_, err = c.Identifications.Get(ctx2, testRequestID, nil)
+	_, err = c.Identifications.Get(ctx2, testIdentificationID, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v", err)
 	}
@@ -746,7 +746,7 @@ func TestGetHonoursContextCancellation(t *testing.T) {
 	// A context deadline ends the wait even while the budget lasts.
 	expired, cancel3 := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 	defer cancel3()
-	_, err = c.Identifications.Get(expired, testRequestID, nil)
+	_, err = c.Identifications.Get(expired, testIdentificationID, nil)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("err = %v", err)
 	}

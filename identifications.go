@@ -92,15 +92,15 @@ type IdentificationsService struct {
 // failed, and (nil, nil) otherwise. A nil result means "unverified", never
 // "clean": treat it like a failed check. Get returns the first version of the
 // row it finds; for the refined state, read the row again later with
-// [HistoryService.Search] and [LookupRequestID].
+// [HistoryService.Search] and [LookupIdentificationID].
 //
 // With opts.NoWait, Get makes a single lookup, retried like any History
 // request.
 //
 // The request ID must be a UUID; otherwise the error matches [ErrValidation]
 // and nothing is sent.
-func (s *IdentificationsService) Get(ctx context.Context, requestID string, opts *GetIdentificationOptions) (*Identification, error) {
-	id, err := validateLookup(LookupRequestID, requestID)
+func (s *IdentificationsService) Get(ctx context.Context, identificationID string, opts *GetIdentificationOptions) (*Identification, error) {
+	id, err := validateLookup(LookupIdentificationID, identificationID)
 	if err != nil {
 		return nil, validationError("the request ID must be a UUID, as returned by the browser agent")
 	}
@@ -110,7 +110,7 @@ func (s *IdentificationsService) Get(ctx context.Context, requestID string, opts
 	if opts.Timeout < 0 || opts.PollInterval < 0 {
 		return nil, validationError("the timeout and the poll interval must not be negative")
 	}
-	req := historyRequest(LookupRequestID, id, 1, 0)
+	req := historyRequest(LookupIdentificationID, id, 1, 0)
 	if opts.NoWait {
 		return s.lookup(ctx, req)
 	}

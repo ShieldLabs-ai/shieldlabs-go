@@ -93,19 +93,19 @@ func identificationFromHistoryRow(row map[string]any) *Identification {
 	observedAt, _ := wire.ParseHistoryTime(str(row["created_at"]))
 
 	return &Identification{
-		RequestID:      str(row["request_id"]),
-		VisitorID:      str(row["visitor_id"]),
-		DeviceID:       str(row["device_id"]),
-		SessionID:      str(row["session_id"]),
-		CookieID:       str(row["cookie_id"]),
-		UserHID:        nullableString(row["user_hid"]),
-		Domain:         domain,
-		PublicIP:       IPInfo{IP: publicIP, Country: str(row["country"])},
-		LocalIP:        IPInfo{IP: localIP, Country: localCountry},
-		ConnectionType: ConnectionType(str(row["connection_type"])),
-		OS:             str(row["os"]),
-		Browser:        str(row["browser"]),
-		DeviceType:     str(row["device_type"]),
+		IdentificationID: identificationID(row),
+		VisitorID:        str(row["visitor_id"]),
+		DeviceID:         str(row["device_id"]),
+		SessionID:        str(row["session_id"]),
+		CookieID:         str(row["cookie_id"]),
+		UserHID:          nullableString(row["user_hid"]),
+		Domain:           domain,
+		PublicIP:         IPInfo{IP: publicIP, Country: str(row["country"])},
+		LocalIP:          IPInfo{IP: localIP, Country: localCountry},
+		ConnectionType:   ConnectionType(str(row["connection_type"])),
+		OS:               str(row["os"]),
+		Browser:          str(row["browser"]),
+		DeviceType:       str(row["device_type"]),
 		TrafficSource: TrafficSource{
 			Channel:        str(row["traffic_channel"]),
 			ReferrerDomain: str(row["referrer_domain"]),
@@ -188,19 +188,19 @@ func identificationFromWebhookData(data map[string]any) *Identification {
 	observedAt, _ := wire.ParseRFC3339(str(data["observed_at"]))
 
 	return &Identification{
-		RequestID:      str(data["request_id"]),
-		VisitorID:      str(data["visitor_id"]),
-		DeviceID:       str(data["device_id"]),
-		SessionID:      str(data["session_id"]),
-		CookieID:       str(data["cookie_id"]),
-		UserHID:        nullableString(data["user_hid"]),
-		Domain:         str(data["domain"]),
-		PublicIP:       webhookIP(data["public_ip"]),
-		LocalIP:        webhookIP(data["local_ip"]),
-		ConnectionType: ConnectionType(str(data["connection_type"])),
-		OS:             str(data["os"]),
-		Browser:        str(data["browser"]),
-		DeviceType:     str(data["device_type"]),
+		IdentificationID: identificationID(data),
+		VisitorID:        str(data["visitor_id"]),
+		DeviceID:         str(data["device_id"]),
+		SessionID:        str(data["session_id"]),
+		CookieID:         str(data["cookie_id"]),
+		UserHID:          nullableString(data["user_hid"]),
+		Domain:           str(data["domain"]),
+		PublicIP:         webhookIP(data["public_ip"]),
+		LocalIP:          webhookIP(data["local_ip"]),
+		ConnectionType:   ConnectionType(str(data["connection_type"])),
+		OS:               str(data["os"]),
+		Browser:          str(data["browser"]),
+		DeviceType:       str(data["device_type"]),
 		TrafficSource: TrafficSource{
 			Channel:        str(ts["channel"]),
 			ReferrerDomain: str(ts["referrer_domain"]),
@@ -238,6 +238,13 @@ func normalizeIP(s string) string {
 
 // str returns a JSON string value, the literal of a JSON number, or "" for
 // anything else (missing, null, boolean, array, object).
+func identificationID(m map[string]any) string {
+	if s := str(m["identification_id"]); s != "" {
+		return s
+	}
+	return str(m["request_id"])
+}
+
 func str(v any) string {
 	switch x := v.(type) {
 	case string:

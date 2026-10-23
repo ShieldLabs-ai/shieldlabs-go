@@ -97,7 +97,7 @@ type EvaluateOptions struct {
 	// nothing itself: record each request ID in your own store (atomically)
 	// and return true when it was already there. Return true as well when the
 	// store cannot be reached, so that failures refuse rather than allow.
-	IsReplay func(requestID string) bool
+	IsReplay func(identificationID string) bool
 }
 
 // Evaluation is the result of [EvaluateIdentification].
@@ -132,7 +132,7 @@ func EvaluateIdentification(ident *Identification, opts EvaluateOptions) Evaluat
 	band := RiskBand(ident.RiskScore)
 	refuse := func(r Reason) Evaluation { return Evaluation{Reason: r, Band: band} }
 
-	if opts.IsReplay != nil && opts.IsReplay(ident.RequestID) {
+	if opts.IsReplay != nil && opts.IsReplay(ident.IdentificationID) {
 		return refuse(ReasonReplayed)
 	}
 	maxAge := opts.MaxAge
