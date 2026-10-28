@@ -103,8 +103,6 @@ type HistoryRow struct {
 	IsIncognito bool `json:"is_incognito"`
 	// Same meaning as `detection_flags.search_bot`.
 	IsSearchBot bool `json:"is_search_bot"`
-	// Same meaning as `detection_flags.suspicious_paid_click`. Omitted when `false`.
-	IsSuspiciousPaidClick *bool `json:"is_suspicious_paid_click,omitempty"`
 	// Landing page URL without the `#fragment` (webhook `traffic_source.landing_url`). Omitted when empty. It keeps the query string, which can contain personal data.
 	EntryUrl *string `json:"entry_url,omitempty"`
 	// `utm_source`, lowercased. Omitted when empty.
@@ -1181,38 +1179,6 @@ func (o *HistoryRow) SetIsSearchBot(v bool) {
 	o.IsSearchBot = v
 }
 
-// GetIsSuspiciousPaidClick returns the IsSuspiciousPaidClick field value if set, zero value otherwise.
-func (o *HistoryRow) GetIsSuspiciousPaidClick() bool {
-	if o == nil || IsNil(o.IsSuspiciousPaidClick) {
-		var ret bool
-		return ret
-	}
-	return *o.IsSuspiciousPaidClick
-}
-
-// GetIsSuspiciousPaidClickOk returns a tuple with the IsSuspiciousPaidClick field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *HistoryRow) GetIsSuspiciousPaidClickOk() (*bool, bool) {
-	if o == nil || IsNil(o.IsSuspiciousPaidClick) {
-		return nil, false
-	}
-	return o.IsSuspiciousPaidClick, true
-}
-
-// HasIsSuspiciousPaidClick returns a boolean if a field has been set.
-func (o *HistoryRow) HasIsSuspiciousPaidClick() bool {
-	if o != nil && !IsNil(o.IsSuspiciousPaidClick) {
-		return true
-	}
-
-	return false
-}
-
-// SetIsSuspiciousPaidClick gets a reference to the given bool and assigns it to the IsSuspiciousPaidClick field.
-func (o *HistoryRow) SetIsSuspiciousPaidClick(v bool) {
-	o.IsSuspiciousPaidClick = &v
-}
-
 // GetEntryUrl returns the EntryUrl field value if set, zero value otherwise.
 func (o *HistoryRow) GetEntryUrl() string {
 	if o == nil || IsNil(o.EntryUrl) {
@@ -1618,9 +1584,6 @@ func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize["is_browser_automation"] = o.IsBrowserAutomation
 	toSerialize["is_incognito"] = o.IsIncognito
 	toSerialize["is_search_bot"] = o.IsSearchBot
-	if !IsNil(o.IsSuspiciousPaidClick) {
-		toSerialize["is_suspicious_paid_click"] = o.IsSuspiciousPaidClick
-	}
 	if !IsNil(o.EntryUrl) {
 		toSerialize["entry_url"] = o.EntryUrl
 	}
@@ -1777,7 +1740,6 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		delete(additionalProperties, "is_browser_automation")
 		delete(additionalProperties, "is_incognito")
 		delete(additionalProperties, "is_search_bot")
-		delete(additionalProperties, "is_suspicious_paid_click")
 		delete(additionalProperties, "entry_url")
 		delete(additionalProperties, "utm_source")
 		delete(additionalProperties, "utm_medium")
