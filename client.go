@@ -19,6 +19,8 @@ type Client struct {
 	// History searches identifications by device, user, visitor, IP address,
 	// session, cookie or request ID.
 	History *HistoryService
+	// Entities reads domain-scoped History lists and cards.
+	Entities *Entities
 
 	t *transport
 }
@@ -57,5 +59,6 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{t: newTransport(base, cfg, header)}
 	c.History = &HistoryService{c: c}
 	c.Identifications = &IdentificationsService{c: c}
+	c.Entities = &Entities{c: c}
 	return c, nil
 }
