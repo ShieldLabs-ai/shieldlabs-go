@@ -52,8 +52,6 @@ type DetectionFlags struct {
 	Incognito bool `json:"incognito"`
 	// A search-engine crawler. Its Risk Score is always 0.
 	SearchBot bool `json:"search_bot"`
-	// The visit came from a paid ad click (Google Ads, Meta, TikTok, Microsoft Ads, LinkedIn, Pinterest or X) and the Risk Score is 60 or more (the 999 marker included).
-	SuspiciousPaidClick bool `json:"suspicious_paid_click"`
 	// JavaScript, or the browser APIs the checks need, were unavailable.
 	JavascriptDisabled bool `json:"javascript_disabled"`
 	// The browser network (STUN) check did not complete. Cleared again when a late network result arrives.
@@ -68,7 +66,7 @@ type _DetectionFlags DetectionFlags
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewDetectionFlags(vpn bool, privacyRelay bool, browserVpnProxy bool, tor bool, proxy bool, datacenterIp bool, abuser bool, osMismatch bool, osNotDetected bool, timezoneMismatch bool, antiDetectBrowser bool, browserAutomation bool, ipMismatch bool, incognito bool, searchBot bool, suspiciousPaidClick bool, javascriptDisabled bool, stunNotChecked bool, checkIncomplete bool) *DetectionFlags {
+func NewDetectionFlags(vpn bool, privacyRelay bool, browserVpnProxy bool, tor bool, proxy bool, datacenterIp bool, abuser bool, osMismatch bool, osNotDetected bool, timezoneMismatch bool, antiDetectBrowser bool, browserAutomation bool, ipMismatch bool, incognito bool, searchBot bool, javascriptDisabled bool, stunNotChecked bool, checkIncomplete bool) *DetectionFlags {
 	this := DetectionFlags{}
 	this.Vpn = vpn
 	this.PrivacyRelay = privacyRelay
@@ -85,7 +83,6 @@ func NewDetectionFlags(vpn bool, privacyRelay bool, browserVpnProxy bool, tor bo
 	this.IpMismatch = ipMismatch
 	this.Incognito = incognito
 	this.SearchBot = searchBot
-	this.SuspiciousPaidClick = suspiciousPaidClick
 	this.JavascriptDisabled = javascriptDisabled
 	this.StunNotChecked = stunNotChecked
 	this.CheckIncomplete = checkIncomplete
@@ -460,30 +457,6 @@ func (o *DetectionFlags) SetSearchBot(v bool) {
 	o.SearchBot = v
 }
 
-// GetSuspiciousPaidClick returns the SuspiciousPaidClick field value
-func (o *DetectionFlags) GetSuspiciousPaidClick() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.SuspiciousPaidClick
-}
-
-// GetSuspiciousPaidClickOk returns a tuple with the SuspiciousPaidClick field value
-// and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetSuspiciousPaidClickOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.SuspiciousPaidClick, true
-}
-
-// SetSuspiciousPaidClick sets field value
-func (o *DetectionFlags) SetSuspiciousPaidClick(v bool) {
-	o.SuspiciousPaidClick = v
-}
-
 // GetJavascriptDisabled returns the JavascriptDisabled field value
 func (o *DetectionFlags) GetJavascriptDisabled() bool {
 	if o == nil {
@@ -581,7 +554,6 @@ func (o DetectionFlags) ToMap() (map[string]interface{}, error) {
 	toSerialize["ip_mismatch"] = o.IpMismatch
 	toSerialize["incognito"] = o.Incognito
 	toSerialize["search_bot"] = o.SearchBot
-	toSerialize["suspicious_paid_click"] = o.SuspiciousPaidClick
 	toSerialize["javascript_disabled"] = o.JavascriptDisabled
 	toSerialize["stun_not_checked"] = o.StunNotChecked
 	toSerialize["check_incomplete"] = o.CheckIncomplete
@@ -608,7 +580,6 @@ func (o *DetectionFlags) UnmarshalJSON(data []byte) (err error) {
 		"ip_mismatch",
 		"incognito",
 		"search_bot",
-		"suspicious_paid_click",
 		"javascript_disabled",
 		"stun_not_checked",
 		"check_incomplete",
