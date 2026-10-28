@@ -4,7 +4,7 @@ All notable changes to this module are documented in this file. The format is ba
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this module follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] - 2026-10-29
 
 ### Changed
 
@@ -12,6 +12,7 @@ All notable changes to this module are documented in this file. The format is ba
 
 ### Added
 
+- Domain-scoped entity History on `Client.Entities`: `List` for `identifications` and `user`, and `Get` for identifications, user, visitor, device and ip. Paths are `/api/v1/domains/{uuid}/history/...`. Lists do not send `include_total` and do not expose a page total. The legacy `History.Search` client is unchanged.
 - `sync.sh` downloads the OpenAPI description and `generate.sh` rebuilds `generated/` from it. The supported client is unchanged.
 
 ## [1.0.0] - 2026-09-30

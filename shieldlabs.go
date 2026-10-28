@@ -6,7 +6,7 @@ import (
 )
 
 // Version is the version of this module.
-const Version = "1.0.0"
+const Version = "1.2.0"
 
 const (
 	// DefaultBaseURL is the origin of the History API. Request paths start
@@ -24,7 +24,7 @@ const (
 )
 
 // userAgent is sent with every request, for example
-// "shieldlabs-go/1.0.0 (go1.24.1; linux/amd64)".
+// "shieldlabs-go/1.2.0 (go1.24.1; linux/amd64)".
 func userAgent() string {
 	return fmt.Sprintf("shieldlabs-go/%s (%s; %s/%s)", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
