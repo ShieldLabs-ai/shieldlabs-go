@@ -343,6 +343,22 @@ Only GET requests are sent, and failed attempts are retried up to `WithMaxRetrie
 - Webhook schema version `2026-06-01`. Unknown fields, flags, connection types, risk signals, event types and schema versions are tolerated.
 - Semantic versioning: breaking changes only in a new major version.
 
+### Current entity lists
+
+```go
+page, err := client.History.List(ctx, "user", &shieldlabs.HistorySearchOptions{
+    Query: url.Values{"ids": {accountHID}},
+})
+// Handle err before reading page. For the next request, keep the same filters
+// and add page.NextPageToken as the page_token query parameter when non-nil.
+```
+
+Entity lists support `identifications` and `user`. `EntityPage.data` preserves the API records unchanged, including unavailable risk and signal states, null fields and aggregate counts. `next_page_token` is opaque: reuse it with the same resource and filters. There is no global `total` in this page model.
+
+The compatibility `identifications.get` / `identifications->get` / `Identifications.Get` normalizes a scored identification card and retains the original card in `raw` / `Raw`. An unavailable or invalid entity Risk Score raises an API/model error; it is never converted to zero. Unavailable weighted signal details remain empty. Use entity records when availability state is needed.
+
+Legacy identifier search and iteration helpers retain their old normalized shape. The current `/{resource}/{resource_id}` endpoint returns one entity card; it is not an identification-history feed. Use the entity list and its cursor for current list pagination. Legacy `total` is only a compatibility fallback to the number of returned records when the API omits it.
+
 ## Development
 
 Refresh the generated client when the API description changes. This does not replace the supported library in this repository.

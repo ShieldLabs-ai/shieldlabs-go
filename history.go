@@ -72,6 +72,8 @@ type HistoryPage struct {
 	Data []*Identification `json:"data"`
 	// Total is the number of rows matching the search.
 	Total int64 `json:"total"`
+	// NextPageToken is the opaque cursor returned by the server, if present.
+	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
 // HistoryService searches the History API. Get it from [Client].History.
@@ -244,7 +246,7 @@ func (s *HistoryService) historyRequest(lookup LookupType, value string, limit i
 
 // List reads one page of identifications or user rows for the client's domain.
 // visitor, device and ip lists are not accepted.
-func (s *HistoryService) List(ctx context.Context, resource string, opts *HistorySearchOptions) (*HistoryPage, error) {
+func (s *HistoryService) List(ctx context.Context, resource string, opts *HistorySearchOptions) (*EntityPage, error) {
 	if resource != "identifications" && resource != "user" {
 		return nil, validationError("list supports identifications and user")
 	}
@@ -272,11 +274,11 @@ func (s *HistoryService) List(ctx context.Context, resource string, opts *Histor
 			query.Add(key, item)
 		}
 	}
-	return s.search(ctx, apiRequest{
-		path:     prefix + "/history/" + resource,
-		query:    query,
-		retry429: true,
-	})
+	resp, err := s.c.t.get(ctx, apiRequest{path: prefix + "/history/" + resource, query: query, retry429: true})
+	if err != nil {
+		return nil, err
+	}
+	return parseCurrentEntityPage(resp)
 }
 
 func historyResource(lookup LookupType) (string, error) {
@@ -358,10 +360,23 @@ func parseHistoryPage(resp *apiResponse) (*HistoryPage, error) {
 	}
 	page := &HistoryPage{Data: []*Identification{}, Total: toInt64(body["total"])}
 	rows, _ := body["data"].([]any)
+	if card, ok := body["data"].(map[string]any); ok {
+		rows = []any{card}
+	}
 	for _, item := range rows {
 		if row, ok := item.(map[string]any); ok {
-			page.Data = append(page.Data, identificationFromHistoryRow(row))
+			ident, err := identificationFromEntityOrRow(row)
+			if err != nil {
+				return nil, err
+			}
+			page.Data = append(page.Data, ident)
 		}
+	}
+	if _, present := body["total"]; !present {
+		page.Total = int64(len(page.Data))
+	}
+	if token, ok := body["next_page_token"].(string); ok {
+		page.NextPageToken = &token
 	}
 	return page, nil
 }
