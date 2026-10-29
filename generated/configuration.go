@@ -113,7 +113,19 @@ func NewConfiguration() *Configuration {
 					Description: "Management API host",
 				},
 			},
-			"HistoryAPIAPIService.SearchHistory": {
+			"HistoryAPIAPIService.GetHistoryEntity": {
+				{
+					URL:         "https://account.shieldlabs.ai",
+					Description: "History API",
+				},
+			},
+			"HistoryAPIAPIService.ListDomains": {
+				{
+					URL:         "https://account.shieldlabs.ai",
+					Description: "History API",
+				},
+			},
+			"HistoryAPIAPIService.ListHistoryEntities": {
 				{
 					URL:         "https://account.shieldlabs.ai",
 					Description: "History API",

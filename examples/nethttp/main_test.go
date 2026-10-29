@@ -53,7 +53,7 @@ func historyServer(t *testing.T, rows map[string]string) *httptest.Server {
 func newTestApp(t *testing.T, rows map[string]string) http.Handler {
 	t.Helper()
 	srv := historyServer(t, rows)
-	client, err := shieldlabs.NewClient(testKey, shieldlabs.WithBaseURL(srv.URL))
+	client, err := shieldlabs.NewClient(testKey, shieldlabs.WithBaseURL(srv.URL), shieldlabs.WithDomainID("11111111-1111-4111-8111-111111111111"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestSignupUnverifiedWhenTheAPIFails(t *testing.T) {
 		http.Error(w, `{"error":"invalid api key"}`, http.StatusUnauthorized)
 	}))
 	defer srv.Close()
-	client, err := shieldlabs.NewClient(testKey, shieldlabs.WithBaseURL(srv.URL))
+	client, err := shieldlabs.NewClient(testKey, shieldlabs.WithBaseURL(srv.URL), shieldlabs.WithDomainID("11111111-1111-4111-8111-111111111111"))
 	if err != nil {
 		t.Fatal(err)
 	}

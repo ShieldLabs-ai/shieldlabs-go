@@ -163,7 +163,7 @@ func TestBackoffDelayBounds(t *testing.T) {
 
 func TestConnectionErrorsAreRetried(t *testing.T) {
 	var attempts atomic.Int32
-	c, err := NewClient(testAPIKey, WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	c, err := NewClient(testAPIKey, WithDomainID(testDomainID), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		attempts.Add(1)
 		return nil, errors.New("connection reset by peer")
 	})}))
@@ -221,7 +221,7 @@ func (timeoutError) Timeout() bool   { return true }
 func (timeoutError) Temporary() bool { return true }
 
 func TestNetworkTimeoutFromTransport(t *testing.T) {
-	c, err := NewClient(testAPIKey, WithMaxRetries(0), WithTimeout(0), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	c, err := NewClient(testAPIKey, WithDomainID(testDomainID), WithMaxRetries(0), WithTimeout(0), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		return nil, timeoutError{}
 	})}))
 	if err != nil {
@@ -233,7 +233,7 @@ func TestNetworkTimeoutFromTransport(t *testing.T) {
 }
 
 func TestBodyReadErrorIsAConnectionError(t *testing.T) {
-	c, err := NewClient(testAPIKey, WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	c, err := NewClient(testAPIKey, WithDomainID(testDomainID), WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: 200, Header: http.Header{}, Body: failingBody{}, Request: r}, nil
 	})}))
 	if err != nil {
@@ -291,14 +291,14 @@ func TestBaseURLRules(t *testing.T) {
 		base string
 		path string
 	}{
-		{srv.URL, "/api/v1/history/device_id/" + NilUUID},
-		{srv.URL + "/", "/api/v1/history/device_id/" + NilUUID},
-		{srv.URL + "/api", "/api/v1/history/device_id/" + NilUUID},
-		{srv.URL + "/api/", "/api/v1/history/device_id/" + NilUUID},
-		{srv.URL + "/api//", "/api/v1/history/device_id/" + NilUUID},
-		{srv.URL + "/proxy", "/proxy/api/v1/history/device_id/" + NilUUID},
-		{srv.URL + "/proxy/api", "/proxy/api/v1/history/device_id/" + NilUUID},
-		{" " + srv.URL + "/apix ", "/apix/api/v1/history/device_id/" + NilUUID},
+		{srv.URL, "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{srv.URL + "/", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{srv.URL + "/api", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{srv.URL + "/api/", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{srv.URL + "/api//", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{srv.URL + "/proxy", "/proxy/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{srv.URL + "/proxy/api", "/proxy/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
+		{" " + srv.URL + "/apix ", "/apix/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/" + NilUUID},
 	}
 	for i, tc := range tests {
 		c, _ := newTestClient(t, tc.base)
@@ -421,7 +421,7 @@ func TestUserAgentFormat(t *testing.T) {
 }
 
 func TestLargeResponseIsRejected(t *testing.T) {
-	c, err := NewClient(testAPIKey, WithMaxRetries(0), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	c, err := NewClient(testAPIKey, WithDomainID(testDomainID), WithMaxRetries(0), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: 200, Header: http.Header{}, Body: &endlessBody{}, Request: r}, nil
 	})}))
 	if err != nil {

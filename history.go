@@ -49,8 +49,11 @@ var uuidRE = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 type HistorySearchOptions struct {
 	// Limit is the page size, 1 to 100. Zero means the default of 20.
 	Limit int
-	// Offset is the number of rows to skip, 0 or more.
+	// Offset is refused. Continue with the page token from the previous response.
 	Offset int
+	// Query holds flat filters such as risk_bands, is_vpn ("true" or "false"),
+	// source and campaign. Repeated keys are repeated query parameters.
+	Query url.Values
 }
 
 // HistoryIterateOptions controls [HistoryService.All].
@@ -90,7 +93,7 @@ type HistoryService struct {
 // the History API cannot match such values in the request path. Invalid
 // arguments return an error matching [ErrValidation].
 func (s *HistoryService) Search(ctx context.Context, lookup LookupType, value string, opts *HistorySearchOptions) (*HistoryPage, error) {
-	limit, offset := defaultSearchLimit, 0
+	limit := defaultSearchLimit
 	if opts != nil {
 		if opts.Limit < 0 || opts.Limit > maxSearchLimit {
 			return nil, validationError("the limit must be between 1 and %d (0 selects the default of %d)", maxSearchLimit, defaultSearchLimit)
@@ -101,13 +104,23 @@ func (s *HistoryService) Search(ctx context.Context, lookup LookupType, value st
 		if opts.Offset < 0 {
 			return nil, validationError("the offset must not be negative")
 		}
-		offset = opts.Offset
+		if opts.Offset != 0 {
+			return nil, validationError("offset is not accepted. Continue with page_token.")
+		}
 	}
 	normalized, err := validateLookup(lookup, value)
 	if err != nil {
 		return nil, err
 	}
-	return s.search(ctx, historyRequest(lookup, normalized, limit, offset))
+	var extra url.Values
+	if opts != nil {
+		extra = opts.Query
+	}
+	req, err := s.historyRequest(lookup, normalized, limit, extra)
+	if err != nil {
+		return nil, err
+	}
+	return s.search(ctx, req)
 }
 
 // All returns an iterator over every identification whose lookup identifier
@@ -152,7 +165,12 @@ func (s *HistoryService) All(ctx context.Context, lookup LookupType, value strin
 		seen := make(map[string]struct{})
 		yielded, offset := 0, 0
 		for {
-			page, err := s.search(ctx, historyRequest(lookup, normalized, pageSize, offset))
+			req, err := s.historyRequest(lookup, normalized, pageSize, nil)
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			page, err := s.search(ctx, req)
 			if err != nil {
 				yield(nil, err)
 				return
@@ -201,18 +219,121 @@ func dedupeKey(ident *Identification) string {
 	}, "|")
 }
 
-// historyRequest builds the request for one page of a validated lookup. It
-// is retried like every History request, 429 answers included, unless the
-// caller marks it as a single attempt.
-func historyRequest(lookup LookupType, value string, limit, offset int) apiRequest {
-	return apiRequest{
-		path: "/api/v1/history/" + string(lookup) + "/" + escapePathValue(value),
-		query: url.Values{
-			"limit":  {strconv.Itoa(limit)},
-			"offset": {strconv.Itoa(offset)},
-		},
-		retry429: true,
+// historyRequest builds one domain-scoped History card read. Offset is not sent.
+func (s *HistoryService) historyRequest(lookup LookupType, value string, limit int, extra url.Values) (apiRequest, error) {
+	resource, err := historyResource(lookup)
+	if err != nil {
+		return apiRequest{}, err
 	}
+	prefix, err := s.c.domainPrefix()
+	if err != nil {
+		return apiRequest{}, err
+	}
+	query := url.Values{"limit": {strconv.Itoa(limit)}}
+	for key, values := range extra {
+		for _, item := range values {
+			query.Add(key, item)
+		}
+	}
+	return apiRequest{
+		path:     prefix + "/history/" + resource + "/" + escapePathValue(value),
+		query:    query,
+		retry429: true,
+	}, nil
+}
+
+// List reads one page of identifications or user rows for the client's domain.
+// visitor, device and ip lists are not accepted.
+func (s *HistoryService) List(ctx context.Context, resource string, opts *HistorySearchOptions) (*HistoryPage, error) {
+	if resource != "identifications" && resource != "user" {
+		return nil, validationError("list supports identifications and user")
+	}
+	limit := defaultSearchLimit
+	var extra url.Values
+	if opts != nil {
+		if opts.Limit < 0 || opts.Limit > maxSearchLimit {
+			return nil, validationError("the limit must be between 1 and %d (0 selects the default of %d)", maxSearchLimit, defaultSearchLimit)
+		}
+		if opts.Limit != 0 {
+			limit = opts.Limit
+		}
+		if opts.Offset != 0 {
+			return nil, validationError("offset is not accepted. Continue with page_token.")
+		}
+		extra = opts.Query
+	}
+	prefix, err := s.c.domainPrefix()
+	if err != nil {
+		return nil, err
+	}
+	query := url.Values{"limit": {strconv.Itoa(limit)}}
+	for key, values := range extra {
+		for _, item := range values {
+			query.Add(key, item)
+		}
+	}
+	return s.search(ctx, apiRequest{
+		path:     prefix + "/history/" + resource,
+		query:    query,
+		retry429: true,
+	})
+}
+
+func historyResource(lookup LookupType) (string, error) {
+	switch lookup {
+	case LookupIdentificationID, LookupRequestID:
+		return "identifications", nil
+	case LookupUserHID:
+		return "user", nil
+	case LookupVisitorID:
+		return "visitor", nil
+	case LookupDeviceID:
+		return "device", nil
+	case LookupIP:
+		return "ip", nil
+	default:
+		return "", validationError("that lookup is not a History resource. Use identifications, user, visitor, device or ip.")
+	}
+}
+
+// Domain is one site this key can read.
+type Domain struct {
+	ID     string `json:"id"`
+	Domain string `json:"domain"`
+}
+
+// Domains lists the domains for this key. ID is the only legal domain id.
+func (c *Client) Domains(ctx context.Context) ([]Domain, error) {
+	resp, err := c.t.get(ctx, apiRequest{path: "/api/v1/domains", retry429: true})
+	if err != nil {
+		return nil, err
+	}
+	body, err := wire.DecodeObject(resp.body)
+	if err != nil {
+		return nil, &APIError{StatusCode: resp.status, Message: "the response is not a domain list: " + err.Error(), Body: resp.body, Header: resp.header}
+	}
+	rows, _ := body["domains"].([]any)
+	out := make([]Domain, 0, len(rows))
+	for _, item := range rows {
+		row, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		id, _ := row["id"].(string)
+		domain, _ := row["domain"].(string)
+		if id == "" || domain == "" {
+			continue
+		}
+		out = append(out, Domain{ID: strings.ToLower(id), Domain: domain})
+	}
+	return out, nil
+}
+
+func (c *Client) domainPrefix() (string, error) {
+	if !uuidRE.MatchString(c.domainID) {
+		return "", validationError("domain_id must be the public domain UUID from domains()")
+	}
+	return "/api/v1/domains/" + strings.ToLower(c.domainID), nil
 }
 
 // search sends one History request and decodes the page.

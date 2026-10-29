@@ -22,7 +22,7 @@ var _ MappedNullable = &LegacySnapshot{}
 
 // LegacySnapshot One identification as returned by the deprecated Management API history endpoint (PascalCase keys). Also carries diagnostic network fields that are not part of the stable contract. Use the History API row instead.
 type LegacySnapshot struct {
-	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
+	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed Identification ID.
 	IdentificationID string `json:"IdentificationID"`
 	// One visit on one origin (UUID v4 created in the browser), shared by the open tabs of that origin. The next visit after the last tab closes gets a new session ID. The nil UUID appears on rate-limit marker rows.
 	SessionID string `json:"SessionID"`
@@ -34,7 +34,7 @@ type LegacySnapshot struct {
 	VisitorID string `json:"VisitorID"`
 	// Public IPv4 address of the HTTP request.
 	IP string `json:"IP"`
-	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `privacy_relay`: a privacy relay such as iCloud Private Relay; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
+	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `private_relay`: a privacy relay such as iCloud Private Relay. Older visits may say `privacy_relay`; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
 	ConnectionType string `json:"ConnectionType"`
 	// Local IP address observed by the ShieldLabs network check (not hashed); `0.0.0.0` when none.
 	WebRtcHIP string `json:"WebRtcHIP"`
@@ -52,7 +52,7 @@ type LegacySnapshot struct {
 	Country string `json:"Country"`
 	// User HID as passed to the agent; `anonymous` for anonymous checks.
 	UserHID string `json:"UserHID"`
-	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; request IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
+	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; Identification IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
 	Score int32 `json:"Score"`
 	// Every entry behind `Score`, informational entries with `Value` 0 included (unlike the History API, this is a parsed array, not a string).
 	Details []ScoreDetail `json:"Details"`

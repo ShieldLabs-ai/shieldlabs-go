@@ -140,10 +140,10 @@ func TestGetWaitsWithBackoffSchedule(t *testing.T) {
 		t.Errorf("requests = %d, want 6", srv.Count())
 	}
 	req := srv.Request(0)
-	if got := req.URL.EscapedPath(); got != "/api/v1/history/identification_id/"+testIdentificationID {
+	if got := req.URL.EscapedPath(); got != "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/identifications/"+testIdentificationID {
 		t.Errorf("path %s", got)
 	}
-	if q := req.URL.Query(); q.Get("limit") != "1" || q.Get("offset") != "0" {
+	if q := req.URL.Query(); q.Get("limit") != "1" || q.Has("offset") {
 		t.Errorf("query %s", req.URL.RawQuery)
 	}
 }
@@ -418,7 +418,7 @@ func TestGetLastLookupGetsAtLeastOneSecond(t *testing.T) {
 		case <-time.After(5 * time.Second):
 		}
 	})
-	c, err := NewClient(testAPIKey, WithBaseURL(srv.URL), WithLogger(discardLogger()))
+	c, err := NewClient(testAPIKey, WithBaseURL(srv.URL), WithDomainID(testDomainID), WithLogger(discardLogger()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,7 +442,7 @@ func TestGetWithTheRealClock(t *testing.T) {
 	srv := newRecordingServer(t, func(w http.ResponseWriter, r *http.Request, n int) {
 		writeJSON(w, 200, emptyPage)
 	})
-	c, err := NewClient(testAPIKey, WithBaseURL(srv.URL), WithLogger(discardLogger()))
+	c, err := NewClient(testAPIKey, WithBaseURL(srv.URL), WithDomainID(testDomainID), WithLogger(discardLogger()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -718,7 +718,7 @@ func TestGetValidation(t *testing.T) {
 	if _, err := c.Identifications.Get(context.Background(), "02F1D973-84DB-4156-A7F7-E799E6BF389B", &GetIdentificationOptions{NoWait: true}); err != nil {
 		t.Fatal(err)
 	}
-	if got := srv.Request(0).URL.EscapedPath(); got != "/api/v1/history/identification_id/"+testIdentificationID {
+	if got := srv.Request(0).URL.EscapedPath(); got != "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/identifications/"+testIdentificationID {
 		t.Errorf("path %s", got)
 	}
 }

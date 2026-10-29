@@ -20,44 +20,47 @@ import (
 // checks if the DetectionFlags type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &DetectionFlags{}
 
-// DetectionFlags Stable yes/no verdicts for the identification. Always all 19 keys. Branch on these flags and on the Risk Score; signal names are for display and logging.  When `search_bot` is `true`, `incognito`, `check_incomplete`, `ip_mismatch` and `javascript_disabled` are always `false`.
+// DetectionFlags The 20 public detection signals in scored webhook contract 2026-10-13. os_mismatch is true when either OS detector fired. browser_vpn_proxy contributes to vpn and is not its own flag. Groups and owner attribution are separate from this set.
 type DetectionFlags struct {
-	// A VPN was detected (scored `vpn` signal).
+	// A VPN was detected, including a VPN or proxy built into the browser. connection_type may still be browser_vpn_proxy.
 	Vpn bool `json:"vpn"`
-	// A privacy relay such as iCloud Private Relay was detected.
-	PrivacyRelay bool `json:"privacy_relay"`
-	// A VPN or proxy built into the browser or one of its extensions. `true` exactly when `connection_type` is `browser_vpn_proxy`.
-	BrowserVpnProxy bool `json:"browser_vpn_proxy"`
-	// The request came through the Tor network.
-	Tor bool `json:"tor"`
 	// A proxy was detected.
 	Proxy bool `json:"proxy"`
-	// The public IP belongs to a datacenter or hosting range.
-	DatacenterIp bool `json:"datacenter_ip"`
-	// The public IP has a record of abuse in IP intelligence.
-	Abuser bool `json:"abuser"`
-	// The operating system seen on the network differs from the one the browser reports.
-	OsMismatch bool `json:"os_mismatch"`
+	// A privacy relay such as iCloud Private Relay was detected. Older payloads used privacy_relay.
+	PrivateRelay bool `json:"private_relay"`
+	// Part of the browser checks timed out, so the verdict rests on partial data. Informational. Weight 0, and present in signals when true. False for a search-engine crawler, an AI bot, or an AI browser.
+	CheckIncomplete bool `json:"check_incomplete"`
+	// The browser network (STUN) check did not complete. Cleared again when a late network result arrives. Older payloads used stun_not_checked.
+	NetworkCheckIncomplete bool `json:"network_check_incomplete"`
 	// The operating system could not be determined from the User-Agent or the network.
 	OsNotDetected bool `json:"os_not_detected"`
 	// The browser timezone differs from the timezone of the IP location.
 	TimezoneMismatch bool `json:"timezone_mismatch"`
+	// JavaScript, or the browser APIs the checks need, were unavailable. False for a search-engine crawler, an AI bot, or an AI browser.
+	JavascriptDisabled bool `json:"javascript_disabled"`
+	// Either operating-system consistency detector fired. The two detectors are not separate public flags.
+	OsMismatch bool `json:"os_mismatch"`
+	// A qualifying mismatch between the public IP and the browser's network evidence was detected. Nominal weight 45; read the returned Risk Score. False for a search-engine crawler, an AI bot, or an AI browser.
+	IpMismatch bool `json:"ip_mismatch"`
+	// The WebSocket-to-TCP latency test fired. Older payloads used ws_tcp_latency.
+	LatencyTest bool `json:"latency_test"`
 	// An anti-detect browser was detected.
 	AntiDetectBrowser bool `json:"anti_detect_browser"`
-	// Browser automation was detected, for example a WebDriver-controlled browser.
-	BrowserAutomation bool `json:"browser_automation"`
-	// The public IP differs from the local IP found by the browser network check. Informational: it does not add to the score.
-	IpMismatch bool `json:"ip_mismatch"`
-	// The browser runs in a private window.
+	DeviceSpoofing    bool `json:"device_spoofing"`
+	// The visitor exceeded the identification rate limit. Older payloads used banned_ip.
+	RateLimited bool `json:"rate_limited"`
+	// The browser runs in a private window. False for a search-engine crawler, an AI bot, or an AI browser. Weight 0, and present in signals when true.
 	Incognito bool `json:"incognito"`
-	// A search-engine crawler. Its Risk Score is always 0.
+	// A search-engine crawler. Its Risk Score is always 0. Weight 0, and present in signals when true.
 	SearchBot bool `json:"search_bot"`
-	// JavaScript, or the browser APIs the checks need, were unavailable.
-	JavascriptDisabled bool `json:"javascript_disabled"`
-	// The browser network (STUN) check did not complete. Cleared again when a late network result arrives.
-	StunNotChecked bool `json:"stun_not_checked"`
-	// Part of the browser checks timed out, so the verdict rests on partial data. Informational.
-	CheckIncomplete bool `json:"check_incomplete"`
+	// A recognized AI bot or crawler. Its Risk Score is always 0. ShieldLabs identifies the provider when available. Weight 0, and present in signals when true.
+	AiBot bool `json:"ai_bot"`
+	// Browser automation was detected, for example a WebDriver-controlled browser. Catalogue weight is 90 for task 204 scoring releases; historical result versions may retain the earlier weight 60.
+	BrowserAutomation bool `json:"browser_automation"`
+	// A recognized AI browser. Its Risk Score is always 0. ShieldLabs identifies the provider when available. Weight 0, and present in signals when true.
+	AiBrowser bool `json:"ai_browser"`
+	// The request came through the Tor network.
+	Tor bool `json:"tor"`
 }
 
 type _DetectionFlags DetectionFlags
@@ -66,26 +69,28 @@ type _DetectionFlags DetectionFlags
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewDetectionFlags(vpn bool, privacyRelay bool, browserVpnProxy bool, tor bool, proxy bool, datacenterIp bool, abuser bool, osMismatch bool, osNotDetected bool, timezoneMismatch bool, antiDetectBrowser bool, browserAutomation bool, ipMismatch bool, incognito bool, searchBot bool, javascriptDisabled bool, stunNotChecked bool, checkIncomplete bool) *DetectionFlags {
+func NewDetectionFlags(vpn bool, proxy bool, privateRelay bool, checkIncomplete bool, networkCheckIncomplete bool, osNotDetected bool, timezoneMismatch bool, javascriptDisabled bool, osMismatch bool, ipMismatch bool, latencyTest bool, antiDetectBrowser bool, deviceSpoofing bool, rateLimited bool, incognito bool, searchBot bool, aiBot bool, browserAutomation bool, aiBrowser bool, tor bool) *DetectionFlags {
 	this := DetectionFlags{}
 	this.Vpn = vpn
-	this.PrivacyRelay = privacyRelay
-	this.BrowserVpnProxy = browserVpnProxy
-	this.Tor = tor
 	this.Proxy = proxy
-	this.DatacenterIp = datacenterIp
-	this.Abuser = abuser
-	this.OsMismatch = osMismatch
+	this.PrivateRelay = privateRelay
+	this.CheckIncomplete = checkIncomplete
+	this.NetworkCheckIncomplete = networkCheckIncomplete
 	this.OsNotDetected = osNotDetected
 	this.TimezoneMismatch = timezoneMismatch
-	this.AntiDetectBrowser = antiDetectBrowser
-	this.BrowserAutomation = browserAutomation
+	this.JavascriptDisabled = javascriptDisabled
+	this.OsMismatch = osMismatch
 	this.IpMismatch = ipMismatch
+	this.LatencyTest = latencyTest
+	this.AntiDetectBrowser = antiDetectBrowser
+	this.DeviceSpoofing = deviceSpoofing
+	this.RateLimited = rateLimited
 	this.Incognito = incognito
 	this.SearchBot = searchBot
-	this.JavascriptDisabled = javascriptDisabled
-	this.StunNotChecked = stunNotChecked
-	this.CheckIncomplete = checkIncomplete
+	this.AiBot = aiBot
+	this.BrowserAutomation = browserAutomation
+	this.AiBrowser = aiBrowser
+	this.Tor = tor
 	return &this
 }
 
@@ -121,78 +126,6 @@ func (o *DetectionFlags) SetVpn(v bool) {
 	o.Vpn = v
 }
 
-// GetPrivacyRelay returns the PrivacyRelay field value
-func (o *DetectionFlags) GetPrivacyRelay() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.PrivacyRelay
-}
-
-// GetPrivacyRelayOk returns a tuple with the PrivacyRelay field value
-// and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetPrivacyRelayOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.PrivacyRelay, true
-}
-
-// SetPrivacyRelay sets field value
-func (o *DetectionFlags) SetPrivacyRelay(v bool) {
-	o.PrivacyRelay = v
-}
-
-// GetBrowserVpnProxy returns the BrowserVpnProxy field value
-func (o *DetectionFlags) GetBrowserVpnProxy() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.BrowserVpnProxy
-}
-
-// GetBrowserVpnProxyOk returns a tuple with the BrowserVpnProxy field value
-// and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetBrowserVpnProxyOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.BrowserVpnProxy, true
-}
-
-// SetBrowserVpnProxy sets field value
-func (o *DetectionFlags) SetBrowserVpnProxy(v bool) {
-	o.BrowserVpnProxy = v
-}
-
-// GetTor returns the Tor field value
-func (o *DetectionFlags) GetTor() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.Tor
-}
-
-// GetTorOk returns a tuple with the Tor field value
-// and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetTorOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Tor, true
-}
-
-// SetTor sets field value
-func (o *DetectionFlags) SetTor(v bool) {
-	o.Tor = v
-}
-
 // GetProxy returns the Proxy field value
 func (o *DetectionFlags) GetProxy() bool {
 	if o == nil {
@@ -217,76 +150,76 @@ func (o *DetectionFlags) SetProxy(v bool) {
 	o.Proxy = v
 }
 
-// GetDatacenterIp returns the DatacenterIp field value
-func (o *DetectionFlags) GetDatacenterIp() bool {
+// GetPrivateRelay returns the PrivateRelay field value
+func (o *DetectionFlags) GetPrivateRelay() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.DatacenterIp
+	return o.PrivateRelay
 }
 
-// GetDatacenterIpOk returns a tuple with the DatacenterIp field value
+// GetPrivateRelayOk returns a tuple with the PrivateRelay field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetDatacenterIpOk() (*bool, bool) {
+func (o *DetectionFlags) GetPrivateRelayOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.DatacenterIp, true
+	return &o.PrivateRelay, true
 }
 
-// SetDatacenterIp sets field value
-func (o *DetectionFlags) SetDatacenterIp(v bool) {
-	o.DatacenterIp = v
+// SetPrivateRelay sets field value
+func (o *DetectionFlags) SetPrivateRelay(v bool) {
+	o.PrivateRelay = v
 }
 
-// GetAbuser returns the Abuser field value
-func (o *DetectionFlags) GetAbuser() bool {
+// GetCheckIncomplete returns the CheckIncomplete field value
+func (o *DetectionFlags) GetCheckIncomplete() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.Abuser
+	return o.CheckIncomplete
 }
 
-// GetAbuserOk returns a tuple with the Abuser field value
+// GetCheckIncompleteOk returns a tuple with the CheckIncomplete field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetAbuserOk() (*bool, bool) {
+func (o *DetectionFlags) GetCheckIncompleteOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Abuser, true
+	return &o.CheckIncomplete, true
 }
 
-// SetAbuser sets field value
-func (o *DetectionFlags) SetAbuser(v bool) {
-	o.Abuser = v
+// SetCheckIncomplete sets field value
+func (o *DetectionFlags) SetCheckIncomplete(v bool) {
+	o.CheckIncomplete = v
 }
 
-// GetOsMismatch returns the OsMismatch field value
-func (o *DetectionFlags) GetOsMismatch() bool {
+// GetNetworkCheckIncomplete returns the NetworkCheckIncomplete field value
+func (o *DetectionFlags) GetNetworkCheckIncomplete() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.OsMismatch
+	return o.NetworkCheckIncomplete
 }
 
-// GetOsMismatchOk returns a tuple with the OsMismatch field value
+// GetNetworkCheckIncompleteOk returns a tuple with the NetworkCheckIncomplete field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetOsMismatchOk() (*bool, bool) {
+func (o *DetectionFlags) GetNetworkCheckIncompleteOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.OsMismatch, true
+	return &o.NetworkCheckIncomplete, true
 }
 
-// SetOsMismatch sets field value
-func (o *DetectionFlags) SetOsMismatch(v bool) {
-	o.OsMismatch = v
+// SetNetworkCheckIncomplete sets field value
+func (o *DetectionFlags) SetNetworkCheckIncomplete(v bool) {
+	o.NetworkCheckIncomplete = v
 }
 
 // GetOsNotDetected returns the OsNotDetected field value
@@ -337,52 +270,52 @@ func (o *DetectionFlags) SetTimezoneMismatch(v bool) {
 	o.TimezoneMismatch = v
 }
 
-// GetAntiDetectBrowser returns the AntiDetectBrowser field value
-func (o *DetectionFlags) GetAntiDetectBrowser() bool {
+// GetJavascriptDisabled returns the JavascriptDisabled field value
+func (o *DetectionFlags) GetJavascriptDisabled() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.AntiDetectBrowser
+	return o.JavascriptDisabled
 }
 
-// GetAntiDetectBrowserOk returns a tuple with the AntiDetectBrowser field value
+// GetJavascriptDisabledOk returns a tuple with the JavascriptDisabled field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetAntiDetectBrowserOk() (*bool, bool) {
+func (o *DetectionFlags) GetJavascriptDisabledOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.AntiDetectBrowser, true
+	return &o.JavascriptDisabled, true
 }
 
-// SetAntiDetectBrowser sets field value
-func (o *DetectionFlags) SetAntiDetectBrowser(v bool) {
-	o.AntiDetectBrowser = v
+// SetJavascriptDisabled sets field value
+func (o *DetectionFlags) SetJavascriptDisabled(v bool) {
+	o.JavascriptDisabled = v
 }
 
-// GetBrowserAutomation returns the BrowserAutomation field value
-func (o *DetectionFlags) GetBrowserAutomation() bool {
+// GetOsMismatch returns the OsMismatch field value
+func (o *DetectionFlags) GetOsMismatch() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.BrowserAutomation
+	return o.OsMismatch
 }
 
-// GetBrowserAutomationOk returns a tuple with the BrowserAutomation field value
+// GetOsMismatchOk returns a tuple with the OsMismatch field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetBrowserAutomationOk() (*bool, bool) {
+func (o *DetectionFlags) GetOsMismatchOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.BrowserAutomation, true
+	return &o.OsMismatch, true
 }
 
-// SetBrowserAutomation sets field value
-func (o *DetectionFlags) SetBrowserAutomation(v bool) {
-	o.BrowserAutomation = v
+// SetOsMismatch sets field value
+func (o *DetectionFlags) SetOsMismatch(v bool) {
+	o.OsMismatch = v
 }
 
 // GetIpMismatch returns the IpMismatch field value
@@ -407,6 +340,102 @@ func (o *DetectionFlags) GetIpMismatchOk() (*bool, bool) {
 // SetIpMismatch sets field value
 func (o *DetectionFlags) SetIpMismatch(v bool) {
 	o.IpMismatch = v
+}
+
+// GetLatencyTest returns the LatencyTest field value
+func (o *DetectionFlags) GetLatencyTest() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.LatencyTest
+}
+
+// GetLatencyTestOk returns a tuple with the LatencyTest field value
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetLatencyTestOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.LatencyTest, true
+}
+
+// SetLatencyTest sets field value
+func (o *DetectionFlags) SetLatencyTest(v bool) {
+	o.LatencyTest = v
+}
+
+// GetAntiDetectBrowser returns the AntiDetectBrowser field value
+func (o *DetectionFlags) GetAntiDetectBrowser() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.AntiDetectBrowser
+}
+
+// GetAntiDetectBrowserOk returns a tuple with the AntiDetectBrowser field value
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetAntiDetectBrowserOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.AntiDetectBrowser, true
+}
+
+// SetAntiDetectBrowser sets field value
+func (o *DetectionFlags) SetAntiDetectBrowser(v bool) {
+	o.AntiDetectBrowser = v
+}
+
+// GetDeviceSpoofing returns the DeviceSpoofing field value
+func (o *DetectionFlags) GetDeviceSpoofing() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.DeviceSpoofing
+}
+
+// GetDeviceSpoofingOk returns a tuple with the DeviceSpoofing field value
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetDeviceSpoofingOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.DeviceSpoofing, true
+}
+
+// SetDeviceSpoofing sets field value
+func (o *DetectionFlags) SetDeviceSpoofing(v bool) {
+	o.DeviceSpoofing = v
+}
+
+// GetRateLimited returns the RateLimited field value
+func (o *DetectionFlags) GetRateLimited() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.RateLimited
+}
+
+// GetRateLimitedOk returns a tuple with the RateLimited field value
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetRateLimitedOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.RateLimited, true
+}
+
+// SetRateLimited sets field value
+func (o *DetectionFlags) SetRateLimited(v bool) {
+	o.RateLimited = v
 }
 
 // GetIncognito returns the Incognito field value
@@ -457,76 +486,100 @@ func (o *DetectionFlags) SetSearchBot(v bool) {
 	o.SearchBot = v
 }
 
-// GetJavascriptDisabled returns the JavascriptDisabled field value
-func (o *DetectionFlags) GetJavascriptDisabled() bool {
+// GetAiBot returns the AiBot field value
+func (o *DetectionFlags) GetAiBot() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.JavascriptDisabled
+	return o.AiBot
 }
 
-// GetJavascriptDisabledOk returns a tuple with the JavascriptDisabled field value
+// GetAiBotOk returns a tuple with the AiBot field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetJavascriptDisabledOk() (*bool, bool) {
+func (o *DetectionFlags) GetAiBotOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.JavascriptDisabled, true
+	return &o.AiBot, true
 }
 
-// SetJavascriptDisabled sets field value
-func (o *DetectionFlags) SetJavascriptDisabled(v bool) {
-	o.JavascriptDisabled = v
+// SetAiBot sets field value
+func (o *DetectionFlags) SetAiBot(v bool) {
+	o.AiBot = v
 }
 
-// GetStunNotChecked returns the StunNotChecked field value
-func (o *DetectionFlags) GetStunNotChecked() bool {
+// GetBrowserAutomation returns the BrowserAutomation field value
+func (o *DetectionFlags) GetBrowserAutomation() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.StunNotChecked
+	return o.BrowserAutomation
 }
 
-// GetStunNotCheckedOk returns a tuple with the StunNotChecked field value
+// GetBrowserAutomationOk returns a tuple with the BrowserAutomation field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetStunNotCheckedOk() (*bool, bool) {
+func (o *DetectionFlags) GetBrowserAutomationOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.StunNotChecked, true
+	return &o.BrowserAutomation, true
 }
 
-// SetStunNotChecked sets field value
-func (o *DetectionFlags) SetStunNotChecked(v bool) {
-	o.StunNotChecked = v
+// SetBrowserAutomation sets field value
+func (o *DetectionFlags) SetBrowserAutomation(v bool) {
+	o.BrowserAutomation = v
 }
 
-// GetCheckIncomplete returns the CheckIncomplete field value
-func (o *DetectionFlags) GetCheckIncomplete() bool {
+// GetAiBrowser returns the AiBrowser field value
+func (o *DetectionFlags) GetAiBrowser() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.CheckIncomplete
+	return o.AiBrowser
 }
 
-// GetCheckIncompleteOk returns a tuple with the CheckIncomplete field value
+// GetAiBrowserOk returns a tuple with the AiBrowser field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetCheckIncompleteOk() (*bool, bool) {
+func (o *DetectionFlags) GetAiBrowserOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.CheckIncomplete, true
+	return &o.AiBrowser, true
 }
 
-// SetCheckIncomplete sets field value
-func (o *DetectionFlags) SetCheckIncomplete(v bool) {
-	o.CheckIncomplete = v
+// SetAiBrowser sets field value
+func (o *DetectionFlags) SetAiBrowser(v bool) {
+	o.AiBrowser = v
+}
+
+// GetTor returns the Tor field value
+func (o *DetectionFlags) GetTor() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.Tor
+}
+
+// GetTorOk returns a tuple with the Tor field value
+// and a boolean to check if the value has been set.
+func (o *DetectionFlags) GetTorOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Tor, true
+}
+
+// SetTor sets field value
+func (o *DetectionFlags) SetTor(v bool) {
+	o.Tor = v
 }
 
 func (o DetectionFlags) MarshalJSON() ([]byte, error) {
@@ -540,23 +593,25 @@ func (o DetectionFlags) MarshalJSON() ([]byte, error) {
 func (o DetectionFlags) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["vpn"] = o.Vpn
-	toSerialize["privacy_relay"] = o.PrivacyRelay
-	toSerialize["browser_vpn_proxy"] = o.BrowserVpnProxy
-	toSerialize["tor"] = o.Tor
 	toSerialize["proxy"] = o.Proxy
-	toSerialize["datacenter_ip"] = o.DatacenterIp
-	toSerialize["abuser"] = o.Abuser
-	toSerialize["os_mismatch"] = o.OsMismatch
+	toSerialize["private_relay"] = o.PrivateRelay
+	toSerialize["check_incomplete"] = o.CheckIncomplete
+	toSerialize["network_check_incomplete"] = o.NetworkCheckIncomplete
 	toSerialize["os_not_detected"] = o.OsNotDetected
 	toSerialize["timezone_mismatch"] = o.TimezoneMismatch
-	toSerialize["anti_detect_browser"] = o.AntiDetectBrowser
-	toSerialize["browser_automation"] = o.BrowserAutomation
+	toSerialize["javascript_disabled"] = o.JavascriptDisabled
+	toSerialize["os_mismatch"] = o.OsMismatch
 	toSerialize["ip_mismatch"] = o.IpMismatch
+	toSerialize["latency_test"] = o.LatencyTest
+	toSerialize["anti_detect_browser"] = o.AntiDetectBrowser
+	toSerialize["device_spoofing"] = o.DeviceSpoofing
+	toSerialize["rate_limited"] = o.RateLimited
 	toSerialize["incognito"] = o.Incognito
 	toSerialize["search_bot"] = o.SearchBot
-	toSerialize["javascript_disabled"] = o.JavascriptDisabled
-	toSerialize["stun_not_checked"] = o.StunNotChecked
-	toSerialize["check_incomplete"] = o.CheckIncomplete
+	toSerialize["ai_bot"] = o.AiBot
+	toSerialize["browser_automation"] = o.BrowserAutomation
+	toSerialize["ai_browser"] = o.AiBrowser
+	toSerialize["tor"] = o.Tor
 	return toSerialize, nil
 }
 
@@ -566,23 +621,25 @@ func (o *DetectionFlags) UnmarshalJSON(data []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"vpn",
-		"privacy_relay",
-		"browser_vpn_proxy",
-		"tor",
 		"proxy",
-		"datacenter_ip",
-		"abuser",
-		"os_mismatch",
+		"private_relay",
+		"check_incomplete",
+		"network_check_incomplete",
 		"os_not_detected",
 		"timezone_mismatch",
-		"anti_detect_browser",
-		"browser_automation",
+		"javascript_disabled",
+		"os_mismatch",
 		"ip_mismatch",
+		"latency_test",
+		"anti_detect_browser",
+		"device_spoofing",
+		"rate_limited",
 		"incognito",
 		"search_bot",
-		"javascript_disabled",
-		"stun_not_checked",
-		"check_incomplete",
+		"ai_bot",
+		"browser_automation",
+		"ai_browser",
+		"tor",
 	}
 
 	allProperties := make(map[string]interface{})

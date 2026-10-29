@@ -24,6 +24,7 @@ const (
 	testAPIKey           = "sec_abcd1234-efgh5678-ijkl9012"
 	testSecretKey        = "0123456789abcdef0123456789abcdef"
 	testIdentificationID = "02f1d973-84db-4156-a7f7-e799e6bf389b"
+	testDomainID         = "11111111-1111-4111-8111-111111111111"
 )
 
 // readFixture returns a file from testdata/.
@@ -87,7 +88,7 @@ func discardLogger() *slog.Logger {
 // and deterministic jitter (backoff delays at half their maximum).
 func newTestClient(t *testing.T, baseURL string, opts ...Option) (*Client, *fakeClock) {
 	t.Helper()
-	opts = append([]Option{WithBaseURL(baseURL), WithLogger(discardLogger())}, opts...)
+	opts = append([]Option{WithBaseURL(baseURL), WithLogger(discardLogger()), WithDomainID(testDomainID)}, opts...)
 	c, err := NewClient(testAPIKey, opts...)
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)

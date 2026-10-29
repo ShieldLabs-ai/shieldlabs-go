@@ -16,11 +16,12 @@ var privateAPIKeyRE = regexp.MustCompile(`^sec_[a-z0-9]{8}-[a-z0-9]{8}-[a-z0-9]{
 type Client struct {
 	// Identifications reads one identification by its request ID.
 	Identifications *IdentificationsService
-	// History searches identifications by device, user, visitor, IP address,
-	// session, cookie or request ID.
+	// History searches identifications by device, user, visitor, IP address
+	// or request ID inside one domain.
 	History *HistoryService
 
-	t *transport
+	domainID string
+	t        *transport
 }
 
 // NewClient returns a History API client for the given Private API Key.
@@ -52,9 +53,12 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	if !privateAPIKeyRE.MatchString(key) {
 		cfg.logger.Warn("shieldlabs: the API key does not look like a Private API Key (sec_xxxxxxxx-xxxxxxxx-xxxxxxxx); the History API expects the Private API Key of your domain, not the public key or the Secret Key")
 	}
+	if cfg.domainID != "" && !uuidRE.MatchString(cfg.domainID) {
+		return nil, validationError("domain_id must be the public domain UUID from domains()")
+	}
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+key)
-	c := &Client{t: newTransport(base, cfg, header)}
+	c := &Client{domainID: strings.ToLower(cfg.domainID), t: newTransport(base, cfg, header)}
 	c.History = &HistoryService{c: c}
 	c.Identifications = &IdentificationsService{c: c}
 	return c, nil

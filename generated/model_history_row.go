@@ -19,9 +19,10 @@ import (
 // checks if the HistoryRow type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &HistoryRow{}
 
-// HistoryRow One identification as stored, in its latest version. It describes the same identification as a webhook `data` object, with different field names:  | Webhook `data` | History row | |---|---| | `risk_score` | `score` | | `signals` | `score_details` (JSON-encoded string, zero weights included) | | `detection_flags` | the `is_*` columns and `check_incomplete` (each column names its flag) | | `detection_flags.browser_vpn_proxy` | derive it: `connection_type == \"browser_vpn_proxy\"` | | `domain` | `site_domain` when present, otherwise `domain` | | `public_ip` | `ip` (`0.0.0.0` instead of `\"\"`) and `country` | | `local_ip` | `webrtc_leak_ip` and `webrtc_leak_country` when `webrtc_leak_source` is set and not `none`, otherwise `web_rtc_ip` and `web_rtc_country` | | `traffic_source` | `traffic_channel`, `referrer_domain`, `entry_url`, `click_id_type`, `utm_*` (omitted when empty) | | `observed_at` (when scoring finished) | `created_at` (when the identification was made) |  The `ip_mismatch` flag has no column. Rows also carry diagnostic network fields (TCP, MTU and STUN measurements) that are not part of the stable contract: ignore fields you do not know.
+// HistoryRow One identification as stored, in its latest version. It describes the same identification as a webhook `data` object, with different field names:  | Webhook `data` | History row | |---|---| | `risk_score` | `score` | | `signals` | not included in the current public History response | | `detection_flags` | `detection_flags`, the same 20 keys and meanings as the scored webhook. The flat fields below repeat those values under History names | | `domain` | `site_domain` when present, otherwise `domain` | | `public_ip` | `ip` (`0.0.0.0` instead of `\"\"`) and `country` | | `local_ip` | not included in the current public History response | | `traffic_source` | `traffic_channel`, `referrer_domain`, `entry_url`, `click_id_type`, `utm_*` (omitted when empty) | | `observed_at` (when scoring finished) | `created_at` (when the identification was made) |  Current responses omit score details and low-level network diagnostics. The optional diagnostic properties below describe historical responses; they are not required. Ignore fields you do not know.
 type HistoryRow struct {
-	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
+	ClientIdentity *ClientIdentity `json:"client_identity,omitempty"`
+	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed Identification ID.
 	IdentificationId string `json:"identification_id"`
 	// One visit on one origin (UUID v4 created in the browser), shared by the open tabs of that origin. The next visit after the last tab closes gets a new session ID. The nil UUID appears on rate-limit marker rows.
 	SessionId string `json:"session_id"`
@@ -47,45 +48,41 @@ type HistoryRow struct {
 	DeviceType string `json:"device_type"`
 	// Country of `ip` as an English country name, or an empty string.
 	Country string `json:"country"`
-	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `privacy_relay`: a privacy relay such as iCloud Private Relay; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
+	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `private_relay`: a privacy relay such as iCloud Private Relay. Older visits may say `privacy_relay`; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
 	ConnectionType string `json:"connection_type"`
-	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; request IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
+	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; Identification IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
 	Score int32 `json:"score"`
 	// The entries behind `score` as a JSON-encoded **string** holding an array of `{\"Value\": <integer>, \"Description\": <string>}`. Parse it before use. Scored entries come first, followed by informational entries with `Value` 0, which can be long. Empty string when no details were stored.  The webhook `signals` are the entries with a non-zero `Value`, in the same order, with each description turned into a signal name (for example `Is proxy` becomes `proxy`). Descriptions are free text for display: never branch on them.
-	ScoreDetails string `json:"score_details"`
+	ScoreDetails *string `json:"score_details,omitempty"`
 	// Time of the identification as `YYYY-MM-DD HH:MM:SS.mmm` in UTC, without a zone designator (not RFC 3339). Older rows can lack the milliseconds.
 	CreatedAt string `json:"created_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{3})?$"`
 	// Version of the row in Unix milliseconds. It increases every time the row is refined, for example when late network data re-scores it after the webhook was sent.
 	Ver int64 `json:"ver"`
 	// Local IP address observed by the ShieldLabs network check; `0.0.0.0` when none.
-	WebRtcIp string `json:"web_rtc_ip"`
+	WebRtcIp *string `json:"web_rtc_ip,omitempty"`
 	// Country of `web_rtc_ip`, or an empty string.
-	WebRtcCountry string `json:"web_rtc_country"`
+	WebRtcCountry *string `json:"web_rtc_country,omitempty"`
 	// Connection class of `web_rtc_ip`, or an empty string.
-	WebRtcConnectionType string `json:"web_rtc_connection_type"`
+	WebRtcConnectionType *string `json:"web_rtc_connection_type,omitempty"`
 	// Local network address leaked by the browser; `0.0.0.0` when none.
-	WebrtcLeakIp string `json:"webrtc_leak_ip"`
+	WebrtcLeakIp *string `json:"webrtc_leak_ip,omitempty"`
 	// Country of `webrtc_leak_ip`, or an empty string.
-	WebrtcLeakCountry string `json:"webrtc_leak_country"`
+	WebrtcLeakCountry *string `json:"webrtc_leak_country,omitempty"`
 	// Connection class of `webrtc_leak_ip`, or an empty string.
-	WebrtcLeakConnectionType string `json:"webrtc_leak_connection_type"`
+	WebrtcLeakConnectionType *string `json:"webrtc_leak_connection_type,omitempty"`
 	// Which check found the local network leak. Known values: `scanner`, `shield`, `none` and the empty string. `none` or an empty string when there is no leak; the webhook `local_ip` then uses `web_rtc_ip`. The set is open: keep values added in later versions.
-	WebrtcLeakSource string `json:"webrtc_leak_source"`
+	WebrtcLeakSource *string `json:"webrtc_leak_source,omitempty"`
 	// Same meaning as `detection_flags.vpn`.
 	IsVpn bool `json:"is_vpn"`
 	// Same meaning as `detection_flags.tor`.
 	IsTor bool `json:"is_tor"`
 	// Same meaning as `detection_flags.proxy`.
 	IsProxy bool `json:"is_proxy"`
-	// Same meaning as `detection_flags.datacenter_ip`.
-	IsDatacenter bool `json:"is_datacenter"`
-	// Same meaning as `detection_flags.abuser`.
-	IsAbuser bool `json:"is_abuser"`
-	// Same meaning as `detection_flags.privacy_relay`.
+	// Same meaning as `detection_flags.private_relay`.
 	IsPrivacyRelay bool `json:"is_privacy_relay"`
-	// Same meaning as `detection_flags.stun_not_checked`.
-	IsStunNotChecked bool `json:"is_stun_not_checked"`
-	// Same meaning as `detection_flags.check_incomplete`. Always `false` for search-engine crawlers.
+	// Same meaning as `detection_flags.network_check_incomplete`.
+	NetworkCheckIncomplete bool `json:"network_check_incomplete"`
+	// Same meaning as `detection_flags.check_incomplete`. Always `false` for a search-engine crawler, an AI bot, or an AI browser.
 	CheckIncomplete bool `json:"check_incomplete"`
 	// Same meaning as `detection_flags.anti_detect_browser`.
 	IsAntidetect bool `json:"is_antidetect"`
@@ -95,14 +92,15 @@ type HistoryRow struct {
 	IsOsNotDetected bool `json:"is_os_not_detected"`
 	// Same meaning as `detection_flags.timezone_mismatch`.
 	IsTimezoneMismatch bool `json:"is_timezone_mismatch"`
-	// Same meaning as `detection_flags.javascript_disabled`. Always `false` for search-engine crawlers.
+	// Same meaning as `detection_flags.javascript_disabled`. Always `false` for a search-engine crawler, an AI bot, or an AI browser.
 	IsJsDisabled bool `json:"is_js_disabled"`
 	// Same meaning as `detection_flags.browser_automation`.
 	IsBrowserAutomation bool `json:"is_browser_automation"`
-	// Same meaning as `detection_flags.incognito`. Always `false` for search-engine crawlers.
+	// Same meaning as `detection_flags.incognito`. Always `false` for a search-engine crawler, an AI bot, or an AI browser.
 	IsIncognito bool `json:"is_incognito"`
 	// Same meaning as `detection_flags.search_bot`.
-	IsSearchBot bool `json:"is_search_bot"`
+	IsSearchBot    bool           `json:"is_search_bot"`
+	DetectionFlags DetectionFlags `json:"detection_flags"`
 	// Landing page URL without the `#fragment` (webhook `traffic_source.landing_url`). Omitted when empty. It keeps the query string, which can contain personal data.
 	EntryUrl *string `json:"entry_url,omitempty"`
 	// `utm_source`, lowercased. Omitted when empty.
@@ -124,7 +122,19 @@ type HistoryRow struct {
 	// Registrable domain of the referrer without `www.`; the crawler name (for example `GoogleBot`) for search-engine crawlers. Omitted when empty.
 	ReferrerDomain *string `json:"referrer_domain,omitempty"`
 	// Ad click identifier type found in the landing URL. Omitted when empty.
-	ClickIdType          *string `json:"click_id_type,omitempty"`
+	ClickIdType *string `json:"click_id_type,omitempty"`
+	// Same meaning as `detection_flags.ip_mismatch`.
+	IpMismatch bool `json:"ip_mismatch"`
+	// Same meaning as `detection_flags.latency_test`.
+	LatencyTest bool `json:"latency_test"`
+	// Same meaning as `detection_flags.device_spoofing`.
+	DeviceSpoofing bool `json:"device_spoofing"`
+	// Same meaning as `detection_flags.rate_limited`. Older payloads used banned_ip.
+	RateLimited bool `json:"rate_limited"`
+	// Same meaning as `detection_flags.ai_bot`.
+	AiBot bool `json:"ai_bot"`
+	// Same meaning as `detection_flags.ai_browser`.
+	AiBrowser            bool `json:"ai_browser"`
 	AdditionalProperties map[string]interface{}
 }
 
@@ -134,7 +144,7 @@ type _HistoryRow HistoryRow
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, scoreDetails string, createdAt string, ver int64, webRtcIp string, webRtcCountry string, webRtcConnectionType string, webrtcLeakIp string, webrtcLeakCountry string, webrtcLeakConnectionType string, webrtcLeakSource string, isVpn bool, isTor bool, isProxy bool, isDatacenter bool, isAbuser bool, isPrivacyRelay bool, isStunNotChecked bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool) *HistoryRow {
+func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, createdAt string, ver int64, isVpn bool, isTor bool, isProxy bool, isPrivacyRelay bool, networkCheckIncomplete bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool, detectionFlags DetectionFlags, ipMismatch bool, latencyTest bool, deviceSpoofing bool, rateLimited bool, aiBot bool, aiBrowser bool) *HistoryRow {
 	this := HistoryRow{}
 	this.IdentificationId = identificationId
 	this.SessionId = sessionId
@@ -150,23 +160,13 @@ func NewHistoryRow(identificationId string, sessionId string, cookieId string, d
 	this.Country = country
 	this.ConnectionType = connectionType
 	this.Score = score
-	this.ScoreDetails = scoreDetails
 	this.CreatedAt = createdAt
 	this.Ver = ver
-	this.WebRtcIp = webRtcIp
-	this.WebRtcCountry = webRtcCountry
-	this.WebRtcConnectionType = webRtcConnectionType
-	this.WebrtcLeakIp = webrtcLeakIp
-	this.WebrtcLeakCountry = webrtcLeakCountry
-	this.WebrtcLeakConnectionType = webrtcLeakConnectionType
-	this.WebrtcLeakSource = webrtcLeakSource
 	this.IsVpn = isVpn
 	this.IsTor = isTor
 	this.IsProxy = isProxy
-	this.IsDatacenter = isDatacenter
-	this.IsAbuser = isAbuser
 	this.IsPrivacyRelay = isPrivacyRelay
-	this.IsStunNotChecked = isStunNotChecked
+	this.NetworkCheckIncomplete = networkCheckIncomplete
 	this.CheckIncomplete = checkIncomplete
 	this.IsAntidetect = isAntidetect
 	this.IsOsMismatch = isOsMismatch
@@ -176,6 +176,13 @@ func NewHistoryRow(identificationId string, sessionId string, cookieId string, d
 	this.IsBrowserAutomation = isBrowserAutomation
 	this.IsIncognito = isIncognito
 	this.IsSearchBot = isSearchBot
+	this.DetectionFlags = detectionFlags
+	this.IpMismatch = ipMismatch
+	this.LatencyTest = latencyTest
+	this.DeviceSpoofing = deviceSpoofing
+	this.RateLimited = rateLimited
+	this.AiBot = aiBot
+	this.AiBrowser = aiBrowser
 	return &this
 }
 
@@ -185,6 +192,38 @@ func NewHistoryRow(identificationId string, sessionId string, cookieId string, d
 func NewHistoryRowWithDefaults() *HistoryRow {
 	this := HistoryRow{}
 	return &this
+}
+
+// GetClientIdentity returns the ClientIdentity field value if set, zero value otherwise.
+func (o *HistoryRow) GetClientIdentity() ClientIdentity {
+	if o == nil || IsNil(o.ClientIdentity) {
+		var ret ClientIdentity
+		return ret
+	}
+	return *o.ClientIdentity
+}
+
+// GetClientIdentityOk returns a tuple with the ClientIdentity field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetClientIdentityOk() (*ClientIdentity, bool) {
+	if o == nil || IsNil(o.ClientIdentity) {
+		return nil, false
+	}
+	return o.ClientIdentity, true
+}
+
+// HasClientIdentity returns a boolean if a field has been set.
+func (o *HistoryRow) HasClientIdentity() bool {
+	if o != nil && !IsNil(o.ClientIdentity) {
+		return true
+	}
+
+	return false
+}
+
+// SetClientIdentity gets a reference to the given ClientIdentity and assigns it to the ClientIdentity field.
+func (o *HistoryRow) SetClientIdentity(v ClientIdentity) {
+	o.ClientIdentity = &v
 }
 
 // GetIdentificationId returns the IdentificationId field value
@@ -555,28 +594,36 @@ func (o *HistoryRow) SetScore(v int32) {
 	o.Score = v
 }
 
-// GetScoreDetails returns the ScoreDetails field value
+// GetScoreDetails returns the ScoreDetails field value if set, zero value otherwise.
 func (o *HistoryRow) GetScoreDetails() string {
-	if o == nil {
+	if o == nil || IsNil(o.ScoreDetails) {
 		var ret string
 		return ret
 	}
-
-	return o.ScoreDetails
+	return *o.ScoreDetails
 }
 
-// GetScoreDetailsOk returns a tuple with the ScoreDetails field value
+// GetScoreDetailsOk returns a tuple with the ScoreDetails field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetScoreDetailsOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.ScoreDetails) {
 		return nil, false
 	}
-	return &o.ScoreDetails, true
+	return o.ScoreDetails, true
 }
 
-// SetScoreDetails sets field value
+// HasScoreDetails returns a boolean if a field has been set.
+func (o *HistoryRow) HasScoreDetails() bool {
+	if o != nil && !IsNil(o.ScoreDetails) {
+		return true
+	}
+
+	return false
+}
+
+// SetScoreDetails gets a reference to the given string and assigns it to the ScoreDetails field.
 func (o *HistoryRow) SetScoreDetails(v string) {
-	o.ScoreDetails = v
+	o.ScoreDetails = &v
 }
 
 // GetCreatedAt returns the CreatedAt field value
@@ -627,172 +674,228 @@ func (o *HistoryRow) SetVer(v int64) {
 	o.Ver = v
 }
 
-// GetWebRtcIp returns the WebRtcIp field value
+// GetWebRtcIp returns the WebRtcIp field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebRtcIp() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebRtcIp) {
 		var ret string
 		return ret
 	}
-
-	return o.WebRtcIp
+	return *o.WebRtcIp
 }
 
-// GetWebRtcIpOk returns a tuple with the WebRtcIp field value
+// GetWebRtcIpOk returns a tuple with the WebRtcIp field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebRtcIpOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebRtcIp) {
 		return nil, false
 	}
-	return &o.WebRtcIp, true
+	return o.WebRtcIp, true
 }
 
-// SetWebRtcIp sets field value
+// HasWebRtcIp returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebRtcIp() bool {
+	if o != nil && !IsNil(o.WebRtcIp) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebRtcIp gets a reference to the given string and assigns it to the WebRtcIp field.
 func (o *HistoryRow) SetWebRtcIp(v string) {
-	o.WebRtcIp = v
+	o.WebRtcIp = &v
 }
 
-// GetWebRtcCountry returns the WebRtcCountry field value
+// GetWebRtcCountry returns the WebRtcCountry field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebRtcCountry() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebRtcCountry) {
 		var ret string
 		return ret
 	}
-
-	return o.WebRtcCountry
+	return *o.WebRtcCountry
 }
 
-// GetWebRtcCountryOk returns a tuple with the WebRtcCountry field value
+// GetWebRtcCountryOk returns a tuple with the WebRtcCountry field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebRtcCountryOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebRtcCountry) {
 		return nil, false
 	}
-	return &o.WebRtcCountry, true
+	return o.WebRtcCountry, true
 }
 
-// SetWebRtcCountry sets field value
+// HasWebRtcCountry returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebRtcCountry() bool {
+	if o != nil && !IsNil(o.WebRtcCountry) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebRtcCountry gets a reference to the given string and assigns it to the WebRtcCountry field.
 func (o *HistoryRow) SetWebRtcCountry(v string) {
-	o.WebRtcCountry = v
+	o.WebRtcCountry = &v
 }
 
-// GetWebRtcConnectionType returns the WebRtcConnectionType field value
+// GetWebRtcConnectionType returns the WebRtcConnectionType field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebRtcConnectionType() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebRtcConnectionType) {
 		var ret string
 		return ret
 	}
-
-	return o.WebRtcConnectionType
+	return *o.WebRtcConnectionType
 }
 
-// GetWebRtcConnectionTypeOk returns a tuple with the WebRtcConnectionType field value
+// GetWebRtcConnectionTypeOk returns a tuple with the WebRtcConnectionType field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebRtcConnectionTypeOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebRtcConnectionType) {
 		return nil, false
 	}
-	return &o.WebRtcConnectionType, true
+	return o.WebRtcConnectionType, true
 }
 
-// SetWebRtcConnectionType sets field value
+// HasWebRtcConnectionType returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebRtcConnectionType() bool {
+	if o != nil && !IsNil(o.WebRtcConnectionType) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebRtcConnectionType gets a reference to the given string and assigns it to the WebRtcConnectionType field.
 func (o *HistoryRow) SetWebRtcConnectionType(v string) {
-	o.WebRtcConnectionType = v
+	o.WebRtcConnectionType = &v
 }
 
-// GetWebrtcLeakIp returns the WebrtcLeakIp field value
+// GetWebrtcLeakIp returns the WebrtcLeakIp field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebrtcLeakIp() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakIp) {
 		var ret string
 		return ret
 	}
-
-	return o.WebrtcLeakIp
+	return *o.WebrtcLeakIp
 }
 
-// GetWebrtcLeakIpOk returns a tuple with the WebrtcLeakIp field value
+// GetWebrtcLeakIpOk returns a tuple with the WebrtcLeakIp field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebrtcLeakIpOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakIp) {
 		return nil, false
 	}
-	return &o.WebrtcLeakIp, true
+	return o.WebrtcLeakIp, true
 }
 
-// SetWebrtcLeakIp sets field value
+// HasWebrtcLeakIp returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebrtcLeakIp() bool {
+	if o != nil && !IsNil(o.WebrtcLeakIp) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebrtcLeakIp gets a reference to the given string and assigns it to the WebrtcLeakIp field.
 func (o *HistoryRow) SetWebrtcLeakIp(v string) {
-	o.WebrtcLeakIp = v
+	o.WebrtcLeakIp = &v
 }
 
-// GetWebrtcLeakCountry returns the WebrtcLeakCountry field value
+// GetWebrtcLeakCountry returns the WebrtcLeakCountry field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebrtcLeakCountry() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakCountry) {
 		var ret string
 		return ret
 	}
-
-	return o.WebrtcLeakCountry
+	return *o.WebrtcLeakCountry
 }
 
-// GetWebrtcLeakCountryOk returns a tuple with the WebrtcLeakCountry field value
+// GetWebrtcLeakCountryOk returns a tuple with the WebrtcLeakCountry field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebrtcLeakCountryOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakCountry) {
 		return nil, false
 	}
-	return &o.WebrtcLeakCountry, true
+	return o.WebrtcLeakCountry, true
 }
 
-// SetWebrtcLeakCountry sets field value
+// HasWebrtcLeakCountry returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebrtcLeakCountry() bool {
+	if o != nil && !IsNil(o.WebrtcLeakCountry) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebrtcLeakCountry gets a reference to the given string and assigns it to the WebrtcLeakCountry field.
 func (o *HistoryRow) SetWebrtcLeakCountry(v string) {
-	o.WebrtcLeakCountry = v
+	o.WebrtcLeakCountry = &v
 }
 
-// GetWebrtcLeakConnectionType returns the WebrtcLeakConnectionType field value
+// GetWebrtcLeakConnectionType returns the WebrtcLeakConnectionType field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebrtcLeakConnectionType() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakConnectionType) {
 		var ret string
 		return ret
 	}
-
-	return o.WebrtcLeakConnectionType
+	return *o.WebrtcLeakConnectionType
 }
 
-// GetWebrtcLeakConnectionTypeOk returns a tuple with the WebrtcLeakConnectionType field value
+// GetWebrtcLeakConnectionTypeOk returns a tuple with the WebrtcLeakConnectionType field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebrtcLeakConnectionTypeOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakConnectionType) {
 		return nil, false
 	}
-	return &o.WebrtcLeakConnectionType, true
+	return o.WebrtcLeakConnectionType, true
 }
 
-// SetWebrtcLeakConnectionType sets field value
+// HasWebrtcLeakConnectionType returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebrtcLeakConnectionType() bool {
+	if o != nil && !IsNil(o.WebrtcLeakConnectionType) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebrtcLeakConnectionType gets a reference to the given string and assigns it to the WebrtcLeakConnectionType field.
 func (o *HistoryRow) SetWebrtcLeakConnectionType(v string) {
-	o.WebrtcLeakConnectionType = v
+	o.WebrtcLeakConnectionType = &v
 }
 
-// GetWebrtcLeakSource returns the WebrtcLeakSource field value
+// GetWebrtcLeakSource returns the WebrtcLeakSource field value if set, zero value otherwise.
 func (o *HistoryRow) GetWebrtcLeakSource() string {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakSource) {
 		var ret string
 		return ret
 	}
-
-	return o.WebrtcLeakSource
+	return *o.WebrtcLeakSource
 }
 
-// GetWebrtcLeakSourceOk returns a tuple with the WebrtcLeakSource field value
+// GetWebrtcLeakSourceOk returns a tuple with the WebrtcLeakSource field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *HistoryRow) GetWebrtcLeakSourceOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.WebrtcLeakSource) {
 		return nil, false
 	}
-	return &o.WebrtcLeakSource, true
+	return o.WebrtcLeakSource, true
 }
 
-// SetWebrtcLeakSource sets field value
+// HasWebrtcLeakSource returns a boolean if a field has been set.
+func (o *HistoryRow) HasWebrtcLeakSource() bool {
+	if o != nil && !IsNil(o.WebrtcLeakSource) {
+		return true
+	}
+
+	return false
+}
+
+// SetWebrtcLeakSource gets a reference to the given string and assigns it to the WebrtcLeakSource field.
 func (o *HistoryRow) SetWebrtcLeakSource(v string) {
-	o.WebrtcLeakSource = v
+	o.WebrtcLeakSource = &v
 }
 
 // GetIsVpn returns the IsVpn field value
@@ -867,54 +970,6 @@ func (o *HistoryRow) SetIsProxy(v bool) {
 	o.IsProxy = v
 }
 
-// GetIsDatacenter returns the IsDatacenter field value
-func (o *HistoryRow) GetIsDatacenter() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.IsDatacenter
-}
-
-// GetIsDatacenterOk returns a tuple with the IsDatacenter field value
-// and a boolean to check if the value has been set.
-func (o *HistoryRow) GetIsDatacenterOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.IsDatacenter, true
-}
-
-// SetIsDatacenter sets field value
-func (o *HistoryRow) SetIsDatacenter(v bool) {
-	o.IsDatacenter = v
-}
-
-// GetIsAbuser returns the IsAbuser field value
-func (o *HistoryRow) GetIsAbuser() bool {
-	if o == nil {
-		var ret bool
-		return ret
-	}
-
-	return o.IsAbuser
-}
-
-// GetIsAbuserOk returns a tuple with the IsAbuser field value
-// and a boolean to check if the value has been set.
-func (o *HistoryRow) GetIsAbuserOk() (*bool, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.IsAbuser, true
-}
-
-// SetIsAbuser sets field value
-func (o *HistoryRow) SetIsAbuser(v bool) {
-	o.IsAbuser = v
-}
-
 // GetIsPrivacyRelay returns the IsPrivacyRelay field value
 func (o *HistoryRow) GetIsPrivacyRelay() bool {
 	if o == nil {
@@ -939,28 +994,28 @@ func (o *HistoryRow) SetIsPrivacyRelay(v bool) {
 	o.IsPrivacyRelay = v
 }
 
-// GetIsStunNotChecked returns the IsStunNotChecked field value
-func (o *HistoryRow) GetIsStunNotChecked() bool {
+// GetNetworkCheckIncomplete returns the NetworkCheckIncomplete field value
+func (o *HistoryRow) GetNetworkCheckIncomplete() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.IsStunNotChecked
+	return o.NetworkCheckIncomplete
 }
 
-// GetIsStunNotCheckedOk returns a tuple with the IsStunNotChecked field value
+// GetNetworkCheckIncompleteOk returns a tuple with the NetworkCheckIncomplete field value
 // and a boolean to check if the value has been set.
-func (o *HistoryRow) GetIsStunNotCheckedOk() (*bool, bool) {
+func (o *HistoryRow) GetNetworkCheckIncompleteOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.IsStunNotChecked, true
+	return &o.NetworkCheckIncomplete, true
 }
 
-// SetIsStunNotChecked sets field value
-func (o *HistoryRow) SetIsStunNotChecked(v bool) {
-	o.IsStunNotChecked = v
+// SetNetworkCheckIncomplete sets field value
+func (o *HistoryRow) SetNetworkCheckIncomplete(v bool) {
+	o.NetworkCheckIncomplete = v
 }
 
 // GetCheckIncomplete returns the CheckIncomplete field value
@@ -1177,6 +1232,30 @@ func (o *HistoryRow) GetIsSearchBotOk() (*bool, bool) {
 // SetIsSearchBot sets field value
 func (o *HistoryRow) SetIsSearchBot(v bool) {
 	o.IsSearchBot = v
+}
+
+// GetDetectionFlags returns the DetectionFlags field value
+func (o *HistoryRow) GetDetectionFlags() DetectionFlags {
+	if o == nil {
+		var ret DetectionFlags
+		return ret
+	}
+
+	return o.DetectionFlags
+}
+
+// GetDetectionFlagsOk returns a tuple with the DetectionFlags field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetDetectionFlagsOk() (*DetectionFlags, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.DetectionFlags, true
+}
+
+// SetDetectionFlags sets field value
+func (o *HistoryRow) SetDetectionFlags(v DetectionFlags) {
+	o.DetectionFlags = v
 }
 
 // GetEntryUrl returns the EntryUrl field value if set, zero value otherwise.
@@ -1531,6 +1610,150 @@ func (o *HistoryRow) SetClickIdType(v string) {
 	o.ClickIdType = &v
 }
 
+// GetIpMismatch returns the IpMismatch field value
+func (o *HistoryRow) GetIpMismatch() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.IpMismatch
+}
+
+// GetIpMismatchOk returns a tuple with the IpMismatch field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetIpMismatchOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.IpMismatch, true
+}
+
+// SetIpMismatch sets field value
+func (o *HistoryRow) SetIpMismatch(v bool) {
+	o.IpMismatch = v
+}
+
+// GetLatencyTest returns the LatencyTest field value
+func (o *HistoryRow) GetLatencyTest() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.LatencyTest
+}
+
+// GetLatencyTestOk returns a tuple with the LatencyTest field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetLatencyTestOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.LatencyTest, true
+}
+
+// SetLatencyTest sets field value
+func (o *HistoryRow) SetLatencyTest(v bool) {
+	o.LatencyTest = v
+}
+
+// GetDeviceSpoofing returns the DeviceSpoofing field value
+func (o *HistoryRow) GetDeviceSpoofing() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.DeviceSpoofing
+}
+
+// GetDeviceSpoofingOk returns a tuple with the DeviceSpoofing field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetDeviceSpoofingOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.DeviceSpoofing, true
+}
+
+// SetDeviceSpoofing sets field value
+func (o *HistoryRow) SetDeviceSpoofing(v bool) {
+	o.DeviceSpoofing = v
+}
+
+// GetRateLimited returns the RateLimited field value
+func (o *HistoryRow) GetRateLimited() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.RateLimited
+}
+
+// GetRateLimitedOk returns a tuple with the RateLimited field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetRateLimitedOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.RateLimited, true
+}
+
+// SetRateLimited sets field value
+func (o *HistoryRow) SetRateLimited(v bool) {
+	o.RateLimited = v
+}
+
+// GetAiBot returns the AiBot field value
+func (o *HistoryRow) GetAiBot() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.AiBot
+}
+
+// GetAiBotOk returns a tuple with the AiBot field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetAiBotOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.AiBot, true
+}
+
+// SetAiBot sets field value
+func (o *HistoryRow) SetAiBot(v bool) {
+	o.AiBot = v
+}
+
+// GetAiBrowser returns the AiBrowser field value
+func (o *HistoryRow) GetAiBrowser() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.AiBrowser
+}
+
+// GetAiBrowserOk returns a tuple with the AiBrowser field value
+// and a boolean to check if the value has been set.
+func (o *HistoryRow) GetAiBrowserOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.AiBrowser, true
+}
+
+// SetAiBrowser sets field value
+func (o *HistoryRow) SetAiBrowser(v bool) {
+	o.AiBrowser = v
+}
+
 func (o HistoryRow) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -1541,6 +1764,9 @@ func (o HistoryRow) MarshalJSON() ([]byte, error) {
 
 func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.ClientIdentity) {
+		toSerialize["client_identity"] = o.ClientIdentity
+	}
 	toSerialize["identification_id"] = o.IdentificationId
 	toSerialize["session_id"] = o.SessionId
 	toSerialize["cookie_id"] = o.CookieId
@@ -1558,23 +1784,37 @@ func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize["country"] = o.Country
 	toSerialize["connection_type"] = o.ConnectionType
 	toSerialize["score"] = o.Score
-	toSerialize["score_details"] = o.ScoreDetails
+	if !IsNil(o.ScoreDetails) {
+		toSerialize["score_details"] = o.ScoreDetails
+	}
 	toSerialize["created_at"] = o.CreatedAt
 	toSerialize["ver"] = o.Ver
-	toSerialize["web_rtc_ip"] = o.WebRtcIp
-	toSerialize["web_rtc_country"] = o.WebRtcCountry
-	toSerialize["web_rtc_connection_type"] = o.WebRtcConnectionType
-	toSerialize["webrtc_leak_ip"] = o.WebrtcLeakIp
-	toSerialize["webrtc_leak_country"] = o.WebrtcLeakCountry
-	toSerialize["webrtc_leak_connection_type"] = o.WebrtcLeakConnectionType
-	toSerialize["webrtc_leak_source"] = o.WebrtcLeakSource
+	if !IsNil(o.WebRtcIp) {
+		toSerialize["web_rtc_ip"] = o.WebRtcIp
+	}
+	if !IsNil(o.WebRtcCountry) {
+		toSerialize["web_rtc_country"] = o.WebRtcCountry
+	}
+	if !IsNil(o.WebRtcConnectionType) {
+		toSerialize["web_rtc_connection_type"] = o.WebRtcConnectionType
+	}
+	if !IsNil(o.WebrtcLeakIp) {
+		toSerialize["webrtc_leak_ip"] = o.WebrtcLeakIp
+	}
+	if !IsNil(o.WebrtcLeakCountry) {
+		toSerialize["webrtc_leak_country"] = o.WebrtcLeakCountry
+	}
+	if !IsNil(o.WebrtcLeakConnectionType) {
+		toSerialize["webrtc_leak_connection_type"] = o.WebrtcLeakConnectionType
+	}
+	if !IsNil(o.WebrtcLeakSource) {
+		toSerialize["webrtc_leak_source"] = o.WebrtcLeakSource
+	}
 	toSerialize["is_vpn"] = o.IsVpn
 	toSerialize["is_tor"] = o.IsTor
 	toSerialize["is_proxy"] = o.IsProxy
-	toSerialize["is_datacenter"] = o.IsDatacenter
-	toSerialize["is_abuser"] = o.IsAbuser
 	toSerialize["is_privacy_relay"] = o.IsPrivacyRelay
-	toSerialize["is_stun_not_checked"] = o.IsStunNotChecked
+	toSerialize["network_check_incomplete"] = o.NetworkCheckIncomplete
 	toSerialize["check_incomplete"] = o.CheckIncomplete
 	toSerialize["is_antidetect"] = o.IsAntidetect
 	toSerialize["is_os_mismatch"] = o.IsOsMismatch
@@ -1584,6 +1824,7 @@ func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize["is_browser_automation"] = o.IsBrowserAutomation
 	toSerialize["is_incognito"] = o.IsIncognito
 	toSerialize["is_search_bot"] = o.IsSearchBot
+	toSerialize["detection_flags"] = o.DetectionFlags
 	if !IsNil(o.EntryUrl) {
 		toSerialize["entry_url"] = o.EntryUrl
 	}
@@ -1617,6 +1858,12 @@ func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ClickIdType) {
 		toSerialize["click_id_type"] = o.ClickIdType
 	}
+	toSerialize["ip_mismatch"] = o.IpMismatch
+	toSerialize["latency_test"] = o.LatencyTest
+	toSerialize["device_spoofing"] = o.DeviceSpoofing
+	toSerialize["rate_limited"] = o.RateLimited
+	toSerialize["ai_bot"] = o.AiBot
+	toSerialize["ai_browser"] = o.AiBrowser
 
 	for key, value := range o.AdditionalProperties {
 		toSerialize[key] = value
@@ -1644,23 +1891,13 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		"country",
 		"connection_type",
 		"score",
-		"score_details",
 		"created_at",
 		"ver",
-		"web_rtc_ip",
-		"web_rtc_country",
-		"web_rtc_connection_type",
-		"webrtc_leak_ip",
-		"webrtc_leak_country",
-		"webrtc_leak_connection_type",
-		"webrtc_leak_source",
 		"is_vpn",
 		"is_tor",
 		"is_proxy",
-		"is_datacenter",
-		"is_abuser",
 		"is_privacy_relay",
-		"is_stun_not_checked",
+		"network_check_incomplete",
 		"check_incomplete",
 		"is_antidetect",
 		"is_os_mismatch",
@@ -1670,6 +1907,13 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		"is_browser_automation",
 		"is_incognito",
 		"is_search_bot",
+		"detection_flags",
+		"ip_mismatch",
+		"latency_test",
+		"device_spoofing",
+		"rate_limited",
+		"ai_bot",
+		"ai_browser",
 	}
 
 	allProperties := make(map[string]interface{})
@@ -1699,6 +1943,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 	additionalProperties := make(map[string]interface{})
 
 	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "client_identity")
 		delete(additionalProperties, "identification_id")
 		delete(additionalProperties, "session_id")
 		delete(additionalProperties, "cookie_id")
@@ -1727,10 +1972,8 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		delete(additionalProperties, "is_vpn")
 		delete(additionalProperties, "is_tor")
 		delete(additionalProperties, "is_proxy")
-		delete(additionalProperties, "is_datacenter")
-		delete(additionalProperties, "is_abuser")
 		delete(additionalProperties, "is_privacy_relay")
-		delete(additionalProperties, "is_stun_not_checked")
+		delete(additionalProperties, "network_check_incomplete")
 		delete(additionalProperties, "check_incomplete")
 		delete(additionalProperties, "is_antidetect")
 		delete(additionalProperties, "is_os_mismatch")
@@ -1740,6 +1983,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		delete(additionalProperties, "is_browser_automation")
 		delete(additionalProperties, "is_incognito")
 		delete(additionalProperties, "is_search_bot")
+		delete(additionalProperties, "detection_flags")
 		delete(additionalProperties, "entry_url")
 		delete(additionalProperties, "utm_source")
 		delete(additionalProperties, "utm_medium")
@@ -1751,6 +1995,12 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		delete(additionalProperties, "traffic_reason")
 		delete(additionalProperties, "referrer_domain")
 		delete(additionalProperties, "click_id_type")
+		delete(additionalProperties, "ip_mismatch")
+		delete(additionalProperties, "latency_test")
+		delete(additionalProperties, "device_spoofing")
+		delete(additionalProperties, "rate_limited")
+		delete(additionalProperties, "ai_bot")
+		delete(additionalProperties, "ai_browser")
 		o.AdditionalProperties = additionalProperties
 	}
 

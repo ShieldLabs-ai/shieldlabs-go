@@ -21,9 +21,11 @@ import (
 // checks if the IdentificationScoredData type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &IdentificationScoredData{}
 
-// IdentificationScoredData The scored identification. Every key is always present (no key is ever omitted); only `user_hid` can be `null`.
+// IdentificationScoredData Final identification. risk_score is this scan only. Version 2026-10-13 uses signals for score contributions, including fired signals of weight 0, detection_flags for 20 public signals, and hre for account results. Older bodies remain accepted.
 type IdentificationScoredData struct {
-	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed request ID.
+	// Optional best-effort attribution. May be omitted or null; every nested field is also optional and nullable. Integrations must work without these values.
+	ClientIdentity *WebhookClientIdentity `json:"client_identity,omitempty"`
+	// Identifies one identification. The browser creates it as a UUID v4 and hands it to your page; it is the join key between the browser, the webhook and the History API. The nil UUID appears only on rate-limit marker rows that arrived with a malformed Identification ID.
 	IdentificationId string `json:"identification_id"`
 	// Server-side visitor identifier (UUID v5). It is sticky to the device: a new cookie on a known device keeps the existing visitor ID, so clearing cookies usually does not change it. The nil UUID appears on identifications without usable device data, such as rate-limit marker rows.
 	VisitorId string `json:"visitor_id"`
@@ -41,7 +43,7 @@ type IdentificationScoredData struct {
 	PublicIp IpInfo `json:"public_ip"`
 	// Local IP address found by the browser network check (WebRTC): the leaked address when a local network leak was found, otherwise the address ShieldLabs observed. Both keys are empty when the check found nothing.
 	LocalIp IpInfo `json:"local_ip"`
-	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `privacy_relay`: a privacy relay such as iCloud Private Relay; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
+	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `private_relay`: a privacy relay such as iCloud Private Relay. Older visits may say `privacy_relay`; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
 	ConnectionType string `json:"connection_type"`
 	// Operating system name, for example `Windows`, `Mac OS X`, `Linux`, `Android`, `IOS (iPhone)`, `IOS (iPad)`, `ChromeOS` or `Unknown`. Open set: display it, do not branch on it.
 	Os string `json:"os"`
@@ -50,13 +52,29 @@ type IdentificationScoredData struct {
 	// Device class from the browser. Known values: `desktop`, `mobile`, `tablet` and `unknown` (the class could not be determined). The set is open: keep values added in later versions and treat them as `unknown`.
 	DeviceType    string        `json:"device_type"`
 	TrafficSource TrafficSource `json:"traffic_source"`
-	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; request IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
+	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; Identification IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
 	RiskScore int32 `json:"risk_score"`
 	// Weighted risk signals behind `risk_score`, in scoring order. Can be empty. The rate-limit marker carries exactly one entry, `{\"name\":\"rate_limited\",\"weight\":999}`.
-	Signals        []Signal       `json:"signals"`
-	DetectionFlags DetectionFlags `json:"detection_flags"`
-	// When scoring finished and the event was built (not the page view time); identical to the envelope `created_at`. RFC 3339 in UTC with up to 9 fractional digits.
+	Signals        []Signal                               `json:"signals"`
+	DetectionFlags IdentificationScoredDataDetectionFlags `json:"detection_flags"`
+	// Original snapshot scan clock, distinct from envelope created_at. RFC 3339 in UTC with up to 9 fractional digits.
 	ObservedAt time.Time `json:"observed_at" validate:"regexp=^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\\\.[0-9]{1,9})?Z$"`
+	// Legacy through 2026-10-08 only; omitted by current emitters.
+	// Deprecated
+	ResultVersion *string `json:"result_version,omitempty"`
+	// Legacy through 2026-10-08 only; omitted by current emitters.
+	// Deprecated
+	ScoringVersion *string `json:"scoring_version,omitempty"`
+	// Legacy 2026-10-06 only; absent from current scored events.
+	// Deprecated
+	RiskEvents []RiskEvent `json:"risk_events,omitempty"`
+	Hre        *HRE        `json:"hre,omitempty"`
+	// Owner label from accepted search-bot detection; omitted when unknown or inactive.
+	SearchBotOwner *string `json:"search_bot_owner,omitempty"`
+	// Provider company label from accepted AI-bot detection; omitted when unknown or inactive.
+	AiBotOwner *string `json:"ai_bot_owner,omitempty"`
+	// Owner label from accepted AI-browser detection; omitted when unknown or inactive.
+	AiBrowserOwner *string `json:"ai_browser_owner,omitempty"`
 }
 
 type _IdentificationScoredData IdentificationScoredData
@@ -65,7 +83,7 @@ type _IdentificationScoredData IdentificationScoredData
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewIdentificationScoredData(identificationId string, visitorId string, deviceId string, sessionId string, cookieId string, userHid NullableString, domain string, publicIp IpInfo, localIp IpInfo, connectionType string, os string, browser string, deviceType string, trafficSource TrafficSource, riskScore int32, signals []Signal, detectionFlags DetectionFlags, observedAt time.Time) *IdentificationScoredData {
+func NewIdentificationScoredData(identificationId string, visitorId string, deviceId string, sessionId string, cookieId string, userHid NullableString, domain string, publicIp IpInfo, localIp IpInfo, connectionType string, os string, browser string, deviceType string, trafficSource TrafficSource, riskScore int32, signals []Signal, detectionFlags IdentificationScoredDataDetectionFlags, observedAt time.Time) *IdentificationScoredData {
 	this := IdentificationScoredData{}
 	this.IdentificationId = identificationId
 	this.VisitorId = visitorId
@@ -94,6 +112,38 @@ func NewIdentificationScoredData(identificationId string, visitorId string, devi
 func NewIdentificationScoredDataWithDefaults() *IdentificationScoredData {
 	this := IdentificationScoredData{}
 	return &this
+}
+
+// GetClientIdentity returns the ClientIdentity field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetClientIdentity() WebhookClientIdentity {
+	if o == nil || IsNil(o.ClientIdentity) {
+		var ret WebhookClientIdentity
+		return ret
+	}
+	return *o.ClientIdentity
+}
+
+// GetClientIdentityOk returns a tuple with the ClientIdentity field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetClientIdentityOk() (*WebhookClientIdentity, bool) {
+	if o == nil || IsNil(o.ClientIdentity) {
+		return nil, false
+	}
+	return o.ClientIdentity, true
+}
+
+// HasClientIdentity returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasClientIdentity() bool {
+	if o != nil && !IsNil(o.ClientIdentity) {
+		return true
+	}
+
+	return false
+}
+
+// SetClientIdentity gets a reference to the given WebhookClientIdentity and assigns it to the ClientIdentity field.
+func (o *IdentificationScoredData) SetClientIdentity(v WebhookClientIdentity) {
+	o.ClientIdentity = &v
 }
 
 // GetIdentificationId returns the IdentificationId field value
@@ -483,9 +533,9 @@ func (o *IdentificationScoredData) SetSignals(v []Signal) {
 }
 
 // GetDetectionFlags returns the DetectionFlags field value
-func (o *IdentificationScoredData) GetDetectionFlags() DetectionFlags {
+func (o *IdentificationScoredData) GetDetectionFlags() IdentificationScoredDataDetectionFlags {
 	if o == nil {
-		var ret DetectionFlags
+		var ret IdentificationScoredDataDetectionFlags
 		return ret
 	}
 
@@ -494,7 +544,7 @@ func (o *IdentificationScoredData) GetDetectionFlags() DetectionFlags {
 
 // GetDetectionFlagsOk returns a tuple with the DetectionFlags field value
 // and a boolean to check if the value has been set.
-func (o *IdentificationScoredData) GetDetectionFlagsOk() (*DetectionFlags, bool) {
+func (o *IdentificationScoredData) GetDetectionFlagsOk() (*IdentificationScoredDataDetectionFlags, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -502,7 +552,7 @@ func (o *IdentificationScoredData) GetDetectionFlagsOk() (*DetectionFlags, bool)
 }
 
 // SetDetectionFlags sets field value
-func (o *IdentificationScoredData) SetDetectionFlags(v DetectionFlags) {
+func (o *IdentificationScoredData) SetDetectionFlags(v IdentificationScoredDataDetectionFlags) {
 	o.DetectionFlags = v
 }
 
@@ -530,6 +580,239 @@ func (o *IdentificationScoredData) SetObservedAt(v time.Time) {
 	o.ObservedAt = v
 }
 
+// GetResultVersion returns the ResultVersion field value if set, zero value otherwise.
+// Deprecated
+func (o *IdentificationScoredData) GetResultVersion() string {
+	if o == nil || IsNil(o.ResultVersion) {
+		var ret string
+		return ret
+	}
+	return *o.ResultVersion
+}
+
+// GetResultVersionOk returns a tuple with the ResultVersion field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// Deprecated
+func (o *IdentificationScoredData) GetResultVersionOk() (*string, bool) {
+	if o == nil || IsNil(o.ResultVersion) {
+		return nil, false
+	}
+	return o.ResultVersion, true
+}
+
+// HasResultVersion returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasResultVersion() bool {
+	if o != nil && !IsNil(o.ResultVersion) {
+		return true
+	}
+
+	return false
+}
+
+// SetResultVersion gets a reference to the given string and assigns it to the ResultVersion field.
+// Deprecated
+func (o *IdentificationScoredData) SetResultVersion(v string) {
+	o.ResultVersion = &v
+}
+
+// GetScoringVersion returns the ScoringVersion field value if set, zero value otherwise.
+// Deprecated
+func (o *IdentificationScoredData) GetScoringVersion() string {
+	if o == nil || IsNil(o.ScoringVersion) {
+		var ret string
+		return ret
+	}
+	return *o.ScoringVersion
+}
+
+// GetScoringVersionOk returns a tuple with the ScoringVersion field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// Deprecated
+func (o *IdentificationScoredData) GetScoringVersionOk() (*string, bool) {
+	if o == nil || IsNil(o.ScoringVersion) {
+		return nil, false
+	}
+	return o.ScoringVersion, true
+}
+
+// HasScoringVersion returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasScoringVersion() bool {
+	if o != nil && !IsNil(o.ScoringVersion) {
+		return true
+	}
+
+	return false
+}
+
+// SetScoringVersion gets a reference to the given string and assigns it to the ScoringVersion field.
+// Deprecated
+func (o *IdentificationScoredData) SetScoringVersion(v string) {
+	o.ScoringVersion = &v
+}
+
+// GetRiskEvents returns the RiskEvents field value if set, zero value otherwise.
+// Deprecated
+func (o *IdentificationScoredData) GetRiskEvents() []RiskEvent {
+	if o == nil || IsNil(o.RiskEvents) {
+		var ret []RiskEvent
+		return ret
+	}
+	return o.RiskEvents
+}
+
+// GetRiskEventsOk returns a tuple with the RiskEvents field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// Deprecated
+func (o *IdentificationScoredData) GetRiskEventsOk() ([]RiskEvent, bool) {
+	if o == nil || IsNil(o.RiskEvents) {
+		return nil, false
+	}
+	return o.RiskEvents, true
+}
+
+// HasRiskEvents returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasRiskEvents() bool {
+	if o != nil && !IsNil(o.RiskEvents) {
+		return true
+	}
+
+	return false
+}
+
+// SetRiskEvents gets a reference to the given []RiskEvent and assigns it to the RiskEvents field.
+// Deprecated
+func (o *IdentificationScoredData) SetRiskEvents(v []RiskEvent) {
+	o.RiskEvents = v
+}
+
+// GetHre returns the Hre field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetHre() HRE {
+	if o == nil || IsNil(o.Hre) {
+		var ret HRE
+		return ret
+	}
+	return *o.Hre
+}
+
+// GetHreOk returns a tuple with the Hre field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetHreOk() (*HRE, bool) {
+	if o == nil || IsNil(o.Hre) {
+		return nil, false
+	}
+	return o.Hre, true
+}
+
+// HasHre returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasHre() bool {
+	if o != nil && !IsNil(o.Hre) {
+		return true
+	}
+
+	return false
+}
+
+// SetHre gets a reference to the given HRE and assigns it to the Hre field.
+func (o *IdentificationScoredData) SetHre(v HRE) {
+	o.Hre = &v
+}
+
+// GetSearchBotOwner returns the SearchBotOwner field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetSearchBotOwner() string {
+	if o == nil || IsNil(o.SearchBotOwner) {
+		var ret string
+		return ret
+	}
+	return *o.SearchBotOwner
+}
+
+// GetSearchBotOwnerOk returns a tuple with the SearchBotOwner field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetSearchBotOwnerOk() (*string, bool) {
+	if o == nil || IsNil(o.SearchBotOwner) {
+		return nil, false
+	}
+	return o.SearchBotOwner, true
+}
+
+// HasSearchBotOwner returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasSearchBotOwner() bool {
+	if o != nil && !IsNil(o.SearchBotOwner) {
+		return true
+	}
+
+	return false
+}
+
+// SetSearchBotOwner gets a reference to the given string and assigns it to the SearchBotOwner field.
+func (o *IdentificationScoredData) SetSearchBotOwner(v string) {
+	o.SearchBotOwner = &v
+}
+
+// GetAiBotOwner returns the AiBotOwner field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetAiBotOwner() string {
+	if o == nil || IsNil(o.AiBotOwner) {
+		var ret string
+		return ret
+	}
+	return *o.AiBotOwner
+}
+
+// GetAiBotOwnerOk returns a tuple with the AiBotOwner field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetAiBotOwnerOk() (*string, bool) {
+	if o == nil || IsNil(o.AiBotOwner) {
+		return nil, false
+	}
+	return o.AiBotOwner, true
+}
+
+// HasAiBotOwner returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasAiBotOwner() bool {
+	if o != nil && !IsNil(o.AiBotOwner) {
+		return true
+	}
+
+	return false
+}
+
+// SetAiBotOwner gets a reference to the given string and assigns it to the AiBotOwner field.
+func (o *IdentificationScoredData) SetAiBotOwner(v string) {
+	o.AiBotOwner = &v
+}
+
+// GetAiBrowserOwner returns the AiBrowserOwner field value if set, zero value otherwise.
+func (o *IdentificationScoredData) GetAiBrowserOwner() string {
+	if o == nil || IsNil(o.AiBrowserOwner) {
+		var ret string
+		return ret
+	}
+	return *o.AiBrowserOwner
+}
+
+// GetAiBrowserOwnerOk returns a tuple with the AiBrowserOwner field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *IdentificationScoredData) GetAiBrowserOwnerOk() (*string, bool) {
+	if o == nil || IsNil(o.AiBrowserOwner) {
+		return nil, false
+	}
+	return o.AiBrowserOwner, true
+}
+
+// HasAiBrowserOwner returns a boolean if a field has been set.
+func (o *IdentificationScoredData) HasAiBrowserOwner() bool {
+	if o != nil && !IsNil(o.AiBrowserOwner) {
+		return true
+	}
+
+	return false
+}
+
+// SetAiBrowserOwner gets a reference to the given string and assigns it to the AiBrowserOwner field.
+func (o *IdentificationScoredData) SetAiBrowserOwner(v string) {
+	o.AiBrowserOwner = &v
+}
+
 func (o IdentificationScoredData) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -540,6 +823,9 @@ func (o IdentificationScoredData) MarshalJSON() ([]byte, error) {
 
 func (o IdentificationScoredData) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.ClientIdentity) {
+		toSerialize["client_identity"] = o.ClientIdentity
+	}
 	toSerialize["identification_id"] = o.IdentificationId
 	toSerialize["visitor_id"] = o.VisitorId
 	toSerialize["device_id"] = o.DeviceId
@@ -558,6 +844,27 @@ func (o IdentificationScoredData) ToMap() (map[string]interface{}, error) {
 	toSerialize["signals"] = o.Signals
 	toSerialize["detection_flags"] = o.DetectionFlags
 	toSerialize["observed_at"] = o.ObservedAt
+	if !IsNil(o.ResultVersion) {
+		toSerialize["result_version"] = o.ResultVersion
+	}
+	if !IsNil(o.ScoringVersion) {
+		toSerialize["scoring_version"] = o.ScoringVersion
+	}
+	if !IsNil(o.RiskEvents) {
+		toSerialize["risk_events"] = o.RiskEvents
+	}
+	if !IsNil(o.Hre) {
+		toSerialize["hre"] = o.Hre
+	}
+	if !IsNil(o.SearchBotOwner) {
+		toSerialize["search_bot_owner"] = o.SearchBotOwner
+	}
+	if !IsNil(o.AiBotOwner) {
+		toSerialize["ai_bot_owner"] = o.AiBotOwner
+	}
+	if !IsNil(o.AiBrowserOwner) {
+		toSerialize["ai_browser_owner"] = o.AiBrowserOwner
+	}
 	return toSerialize, nil
 }
 

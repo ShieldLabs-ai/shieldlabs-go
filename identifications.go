@@ -110,7 +110,10 @@ func (s *IdentificationsService) Get(ctx context.Context, identificationID strin
 	if opts.Timeout < 0 || opts.PollInterval < 0 {
 		return nil, validationError("the timeout and the poll interval must not be negative")
 	}
-	req := historyRequest(LookupIdentificationID, id, 1, 0)
+	req, err := s.c.History.historyRequest(LookupIdentificationID, id, 1, nil)
+	if err != nil {
+		return nil, err
+	}
 	if opts.NoWait {
 		return s.lookup(ctx, req)
 	}

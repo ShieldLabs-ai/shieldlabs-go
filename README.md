@@ -41,7 +41,7 @@ import (
 )
 
 func main() {
-	client, err := shieldlabs.NewClient(os.Getenv("SHIELDLABS_API_KEY")) // sec_your_private_key
+	client, err := shieldlabs.NewClient(os.Getenv("SHIELDLABS_API_KEY"), shieldlabs.WithDomainID(os.Getenv("SHIELDLABS_DOMAIN_ID"))) // sec_your_private_key
 	if err != nil {
 		log.Fatal(err)
 	}

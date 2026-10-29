@@ -18,6 +18,7 @@ type Option func(*config)
 
 type config struct {
 	baseURL           string
+	domainID          string
 	allowInsecureHTTP bool
 	httpClient        *http.Client
 	timeout           time.Duration
@@ -58,6 +59,15 @@ func newConfig(defaultBaseURL string, opts []Option) *config {
 //
 // The URL must use https. Plain http is accepted for localhost, 127.0.0.0/8
 // and [::1], and for other hosts only together with [WithInsecureHTTP].
+// WithDomainID sets the public domain UUID from Domains. History reads are
+// scoped to that domain. An empty value is kept and rejected when a History
+// request is built.
+func WithDomainID(domainID string) Option {
+	return func(c *config) {
+		c.domainID = strings.TrimSpace(domainID)
+	}
+}
+
 func WithBaseURL(baseURL string) Option {
 	return func(c *config) {
 		if strings.TrimSpace(baseURL) != "" {
