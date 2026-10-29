@@ -234,7 +234,8 @@ func (r ApiSearchHistoryDeprecatedRequest) Execute() ([]LegacySnapshot, *http.Re
 SearchHistoryDeprecated Search history by identifier (deprecated)
 
 **Deprecated.** This endpoint stops working after Sat, 01 Jan 2027 00:00:00 GMT. Use
-`searchHistory` on the History API instead: `https://account.shieldlabs.ai/api/v1/history`.
+`listHistoryEntities` on the History API instead:
+`https://account.shieldlabs.ai/api/v1/domains/{domain_id}/history/identifications`.
 Every answer of this route except `429` and `503` carries `Deprecation: true`, a `Sunset`
 header and a `Link` header with `rel="successor-version"` pointing there. The plain-text `404`
 for a path that matches no route and the edge proxy errors do not carry them.
@@ -245,7 +246,7 @@ defaults to 100 and there is no `offset`. It uses the Management API credentials
 (15 requests per minute per client IP, then a 10-minute block). The call is free.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-	@param type_ Identifier to search by. Other values get a `404` with a bare JSON string such as `\"auto is not supported\"`.
+	@param type_ Identifier to search by. `request_id` is a legacy alias of `identification_id`. Other values get a `404` with a bare JSON string such as `\"auto is not supported\"`.
 	@param value Value of the identifier. UUID types accept a UUID of any version; `ip` must be an IP address (an IPv6 address passes validation but then fails with `400` and a `null` body); `user_hid` is free text.
 	@return ApiSearchHistoryDeprecatedRequest
 

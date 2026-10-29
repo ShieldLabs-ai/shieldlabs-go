@@ -71,7 +71,7 @@ func TestNewClientTrimsKeyAndAcceptsNilOptions(t *testing.T) {
 	srv := newRecordingServer(t, func(w http.ResponseWriter, r *http.Request, n int) {
 		writeJSON(w, 200, emptyPage)
 	})
-	c, err := NewClient("  "+testAPIKey+"\n", nil, WithBaseURL(srv.URL), WithHTTPClient(nil), WithLogger(nil))
+	c, err := NewClient("  "+testAPIKey+"\n", nil, WithBaseURL(srv.URL), WithDomainID(testDomainID), WithHTTPClient(nil), WithLogger(nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestCustomHTTPClientIsUsed(t *testing.T) {
 		used = true
 		return &http.Response{StatusCode: 200, Header: http.Header{}, Body: http.NoBody, Request: r}, nil
 	})}
-	c, err := NewClient(testAPIKey, WithHTTPClient(hc))
+	c, err := NewClient(testAPIKey, WithDomainID(testDomainID), WithHTTPClient(hc))
 	if err != nil {
 		t.Fatal(err)
 	}

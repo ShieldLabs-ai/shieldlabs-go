@@ -8,6 +8,9 @@ All notable changes to this module are documented in this file. The format is ba
 
 ### Changed
 
+- Entity-card responses preserve the public ID, nested Risk Score, timestamp, addresses, traffic and confirmed flags. Original cards remain available as raw data. The new entity list returns an `EntityPage` with original records and `next_page_token`, without a fabricated global total. Compatibility identification reads reject unavailable or invalid scores instead of treating them as zero.
+
+- History reads use `GET /api/v1/domains/{domain_id}/history/{resource}/{resource_id}`. Pass the public domain UUID with `WithDomainID`. `Client.Domains` lists domains for the key. `History.List` reads `identifications` and `user` and sends filters as flat query parameters. `Offset` other than zero is refused. The client does not call the retired unscoped History search.
 - `DetectionFlags` follows webhook schema `2026-10-13`: 20 public booleans. `vpn` covers a network VPN and an in-browser VPN or proxy. `os_mismatch` covers either operating-system mismatch check. The public set adds `ws_tcp_latency`, `device_spoofing`, `rate_limited`, `ai_bot` and `ai_browser`.
 
 ### Added

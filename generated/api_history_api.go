@@ -17,110 +17,321 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
+	"time"
 )
 
 // HistoryAPIAPIService HistoryAPIAPI service
 type HistoryAPIAPIService service
 
-type ApiSearchHistoryRequest struct {
-	ctx        context.Context
-	ApiService *HistoryAPIAPIService
-	searchType string
-	value      string
-	limit      *int32
-	offset     *int32
+type ApiGetHistoryEntityRequest struct {
+	ctx                    context.Context
+	ApiService             *HistoryAPIAPIService
+	domainId               string
+	resource               string
+	resourceId             string
+	limit                  *int32
+	pageToken              *string
+	from                   *time.Time
+	to                     *time.Time
+	snapshot               *string
+	riskBands              *[]string
+	hreMinAccounts         *int32
+	hreMinDevices          *int32
+	isVpn                  *string
+	isTor                  *string
+	isProxy                *string
+	isPrivacyRelay         *string
+	networkCheckIncomplete *string
+	checkIncomplete        *string
+	isAntidetect           *string
+	isOsMismatch           *string
+	isOsNotDetected        *string
+	isTimezoneMismatch     *string
+	isJsDisabled           *string
+	isBrowserAutomation    *string
+	isIncognito            *string
+	isSearchBot            *string
+	ipMismatch             *string
+	latencyTest            *string
+	deviceSpoofing         *string
+	rateLimited            *string
+	aiBot                  *string
+	aiBrowser              *string
+	riskSignals            *[]string
+	source                 *[]string
+	campaign               *[]string
+	deviceIdSource         *string
+	relation               *string
+	relationLimit          *int32
+	relationPageToken      *string
 }
 
-// Maximum number of identifications to return, from 1 to 100. The server replaces any other value (and a non-numeric one) with 20 instead of clamping it, so validate it on your side.
-func (r ApiSearchHistoryRequest) Limit(limit int32) ApiSearchHistoryRequest {
+// Maximum records in the page, from 1 through 100.
+func (r ApiGetHistoryEntityRequest) Limit(limit int32) ApiGetHistoryEntityRequest {
 	r.limit = &limit
 	return r
 }
 
-// Number of identifications to skip, for paging. The server treats negative or non-numeric values as 0. Rows are ordered by &#x60;created_at&#x60; only, so paging while new identifications arrive can repeat or skip rows: deduplicate on &#x60;identification_id&#x60;.
-func (r ApiSearchHistoryRequest) Offset(offset int32) ApiSearchHistoryRequest {
-	r.offset = &offset
+// Opaque token from the previous page. Omit it on the first page.
+func (r ApiGetHistoryEntityRequest) PageToken(pageToken string) ApiGetHistoryEntityRequest {
+	r.pageToken = &pageToken
 	return r
 }
 
-func (r ApiSearchHistoryRequest) Execute() (*HistoryPage, *http.Response, error) {
-	return r.ApiService.SearchHistoryExecute(r)
+// Inclusive RFC3339 start. Send &#x60;to&#x60; as well, or send neither.
+func (r ApiGetHistoryEntityRequest) From(from time.Time) ApiGetHistoryEntityRequest {
+	r.from = &from
+	return r
+}
+
+// Exclusive RFC3339 end. Send &#x60;from&#x60; as well, or send neither.
+func (r ApiGetHistoryEntityRequest) To(to time.Time) ApiGetHistoryEntityRequest {
+	r.to = &to
+	return r
+}
+
+// Value of the History-Snapshot header. Continues that read.
+func (r ApiGetHistoryEntityRequest) Snapshot(snapshot string) ApiGetHistoryEntityRequest {
+	r.snapshot = &snapshot
+	return r
+}
+
+// Repeat for trusted, suspicious, or dangerous.
+func (r ApiGetHistoryEntityRequest) RiskBands(riskBands []string) ApiGetHistoryEntityRequest {
+	r.riskBands = &riskBands
+	return r
+}
+
+// Minimum linked accounts for a high-risk event, from 3 to 99.
+func (r ApiGetHistoryEntityRequest) HreMinAccounts(hreMinAccounts int32) ApiGetHistoryEntityRequest {
+	r.hreMinAccounts = &hreMinAccounts
+	return r
+}
+
+// Minimum linked devices for a high-risk event, from 4 to 99.
+func (r ApiGetHistoryEntityRequest) HreMinDevices(hreMinDevices int32) ApiGetHistoryEntityRequest {
+	r.hreMinDevices = &hreMinDevices
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_vpn&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsVpn(isVpn string) ApiGetHistoryEntityRequest {
+	r.isVpn = &isVpn
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_tor&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsTor(isTor string) ApiGetHistoryEntityRequest {
+	r.isTor = &isTor
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_proxy&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsProxy(isProxy string) ApiGetHistoryEntityRequest {
+	r.isProxy = &isProxy
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_privacy_relay&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsPrivacyRelay(isPrivacyRelay string) ApiGetHistoryEntityRequest {
+	r.isPrivacyRelay = &isPrivacyRelay
+	return r
+}
+
+// When set, keep only rows whose &#x60;network_check_incomplete&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) NetworkCheckIncomplete(networkCheckIncomplete string) ApiGetHistoryEntityRequest {
+	r.networkCheckIncomplete = &networkCheckIncomplete
+	return r
+}
+
+// When set, keep only rows whose &#x60;check_incomplete&#x60; equals this value. Always false for search-engine crawlers, matching the row. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) CheckIncomplete(checkIncomplete string) ApiGetHistoryEntityRequest {
+	r.checkIncomplete = &checkIncomplete
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_antidetect&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsAntidetect(isAntidetect string) ApiGetHistoryEntityRequest {
+	r.isAntidetect = &isAntidetect
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_os_mismatch&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsOsMismatch(isOsMismatch string) ApiGetHistoryEntityRequest {
+	r.isOsMismatch = &isOsMismatch
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_os_not_detected&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsOsNotDetected(isOsNotDetected string) ApiGetHistoryEntityRequest {
+	r.isOsNotDetected = &isOsNotDetected
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_timezone_mismatch&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsTimezoneMismatch(isTimezoneMismatch string) ApiGetHistoryEntityRequest {
+	r.isTimezoneMismatch = &isTimezoneMismatch
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_js_disabled&#x60; equals this value. Always false for search-engine crawlers, matching the row. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsJsDisabled(isJsDisabled string) ApiGetHistoryEntityRequest {
+	r.isJsDisabled = &isJsDisabled
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_browser_automation&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsBrowserAutomation(isBrowserAutomation string) ApiGetHistoryEntityRequest {
+	r.isBrowserAutomation = &isBrowserAutomation
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_incognito&#x60; equals this value. Always false for search-engine crawlers, matching the row. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsIncognito(isIncognito string) ApiGetHistoryEntityRequest {
+	r.isIncognito = &isIncognito
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_search_bot&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) IsSearchBot(isSearchBot string) ApiGetHistoryEntityRequest {
+	r.isSearchBot = &isSearchBot
+	return r
+}
+
+// Keep only rows whose &#x60;ip_mismatch&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiGetHistoryEntityRequest) IpMismatch(ipMismatch string) ApiGetHistoryEntityRequest {
+	r.ipMismatch = &ipMismatch
+	return r
+}
+
+// Keep only rows whose &#x60;latency_test&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiGetHistoryEntityRequest) LatencyTest(latencyTest string) ApiGetHistoryEntityRequest {
+	r.latencyTest = &latencyTest
+	return r
+}
+
+// Keep only rows whose &#x60;device_spoofing&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiGetHistoryEntityRequest) DeviceSpoofing(deviceSpoofing string) ApiGetHistoryEntityRequest {
+	r.deviceSpoofing = &deviceSpoofing
+	return r
+}
+
+// When set, keep only rows whose &#x60;rate_limited&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) RateLimited(rateLimited string) ApiGetHistoryEntityRequest {
+	r.rateLimited = &rateLimited
+	return r
+}
+
+// Keep only rows whose &#x60;ai_bot&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiGetHistoryEntityRequest) AiBot(aiBot string) ApiGetHistoryEntityRequest {
+	r.aiBot = &aiBot
+	return r
+}
+
+// Keep only rows whose &#x60;ai_browser&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiGetHistoryEntityRequest) AiBrowser(aiBrowser string) ApiGetHistoryEntityRequest {
+	r.aiBrowser = &aiBrowser
+	return r
+}
+
+// Repeat a public signal code. Several codes combine with OR.
+func (r ApiGetHistoryEntityRequest) RiskSignals(riskSignals []string) ApiGetHistoryEntityRequest {
+	r.riskSignals = &riskSignals
+	return r
+}
+
+// Traffic source. Together with campaign, at most 8 values, matched if any value matches. _empty means no referrer.
+func (r ApiGetHistoryEntityRequest) Source(source []string) ApiGetHistoryEntityRequest {
+	r.source = &source
+	return r
+}
+
+// Campaign name. No campaign matches visits with no campaign.
+func (r ApiGetHistoryEntityRequest) Campaign(campaign []string) ApiGetHistoryEntityRequest {
+	r.campaign = &campaign
+	return r
+}
+
+// Device cards only. &#x60;legacy&#x60; or &#x60;fp21_record&#x60;.
+func (r ApiGetHistoryEntityRequest) DeviceIdSource(deviceIdSource string) ApiGetHistoryEntityRequest {
+	r.deviceIdSource = &deviceIdSource
+	return r
+}
+
+// Linked-id page for this card. Identification cards reject this parameter.
+func (r ApiGetHistoryEntityRequest) Relation(relation string) ApiGetHistoryEntityRequest {
+	r.relation = &relation
+	return r
+}
+
+// Linked records in one page, from 1 through 100.
+func (r ApiGetHistoryEntityRequest) RelationLimit(relationLimit int32) ApiGetHistoryEntityRequest {
+	r.relationLimit = &relationLimit
+	return r
+}
+
+// Opaque token from the previous linked-id page.
+func (r ApiGetHistoryEntityRequest) RelationPageToken(relationPageToken string) ApiGetHistoryEntityRequest {
+	r.relationPageToken = &relationPageToken
+	return r
+}
+
+func (r ApiGetHistoryEntityRequest) Execute() (*GetHistoryEntity200Response, *http.Response, error) {
+	return r.ApiService.GetHistoryEntityExecute(r)
 }
 
 /*
-SearchHistory Search identifications
+GetHistoryEntity Read one History entity
 
-Returns the identifications of your domain that match one identifier, newest first, together
-with the total number of matches. The Private API Key selects the domain; identifications from
-its subdomains are included (`domain` holds the host, `site_domain` the registered domain).
-
-**Read one verdict.** After a protected action, search by `identification_id` with `limit=1`. The row
-appears about 1-3 seconds after the browser call and can be refined for up to about 10 seconds
-as follow-up network checks finish, so start the identification when the user begins the
-action (for example when the signup form opens), not when the form is submitted. An empty
-`data` array means "not scored yet", never "clean". Poll with backoff (first try at once, then
-wait 250 ms, 500 ms, 1 s, then steps of about 1.5 s) and treat a `429` inside that loop as
-"wait longer". The official server SDKs do this for you.
-
-**Account-level checks.** Search by `device_id`, `user_hid`, `visitor_id` or `ip` to see how
-many accounts share a device, how many devices one account uses, or what else came from one
-IP address. When you count accounts, skip rows whose `user_hid` is empty or one of the values
-that do not identify a user: `anonymous`, `fail`, `-1` and `unknown`.
-
-**Validate before sending.** The server does not validate the path: an unknown `search_type`
-returns the latest identifications of the whole domain unfiltered, a malformed UUID or IPv4
-value returns `500`, and a `limit` outside 1-100 silently becomes 20.
-
-**Paging.** Page with `offset` while it is below `total`. Rows are ordered by `created_at`
-only, so paging while new identifications arrive can repeat or skip rows: deduplicate on
-`identification_id`.
-
-**Latest state.** A row can be refined after the webhook was sent, for example when late
-network data re-scores it; its `ver` then increases. The History API always returns the latest
-version, which makes it the guaranteed read path.
-
-Reads are free: they do not use your included identifications.
+Reads one `identifications`, `user`, `visitor`, `device` or `ip` card.
+`{domain_id}` is the public domain UUID. `{resource_id}` is that record's id.
+The list query parameters also apply. A device card accepts `device_id_source`.
+An unknown id returns `404 not_found`.
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-	@param searchType Identifier to search by. These values are supported (`request_id` is a legacy alias of `identification_id`): - `identification_id`: one identification (read a verdict); - `device_id`: every identification of one device; - `user_hid`: every identification of one account; - `visitor_id`: every identification of one visitor; - `ip`: every identification from one public IPv4 address; - `session_id`: every identification of one visit; - `cookie_id`: every identification with one browser cookie.  The server does not reject other values: it ignores them and returns the latest identifications of the whole domain, so restrict the value on your side.
-	@param value Value of the identifier, validated on your side before sending: - `identification_id`, `device_id`, `visitor_id`, `session_id`, `cookie_id`: a UUID of any version,   the nil UUID included, matching   `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`. Send it   lowercase. - `ip`: a dotted IPv4 address. IPv6 addresses cannot be searched. - `user_hid`: the exact, case-sensitive User HID as one path segment, encoded the way the   server reads it: send the characters `A-Z a-z 0-9 - . _ ~ $ & + , : ; = @` unescaped and   percent-encode every other byte of the UTF-8 value as uppercase `%XX`, including   `! ' ( ) *`, spaces and `%` itself. The server compares any other encoding literally, so   `%40` instead of `@`, or lowercase hex digits, return an empty page instead of the matching   rows. Many HTTP clients and generated clients escape `$ & + , : ; = @` in path values: build   this path yourself when yours does. A User HID that contains `/` cannot be searched, and most   HTTP clients cannot send `.` or `..` because they remove them as dot segments; the pattern   rejects these values. Hex-encoded hashes need no escaping at all.  The server does not validate the value: a malformed UUID or IPv4 address gets a `500`.
-	@return ApiSearchHistoryRequest
+	@param domainId Public domain UUID of the site whose History is being read.
+	@param resource History resource. A card exists for identifications, user, visitor, device and ip.
+	@param resourceId Record id. UUID for identifications, visitor and device. User HID text for user. IPv4 for ip. Send a User HID as one path segment: the characters `A-Z a-z 0-9 - . _ ~ $ & + , : ; = @` unescaped and every other byte as uppercase `%XX`.
+	@return ApiGetHistoryEntityRequest
 */
-func (a *HistoryAPIAPIService) SearchHistory(ctx context.Context, searchType string, value string) ApiSearchHistoryRequest {
-	return ApiSearchHistoryRequest{
+func (a *HistoryAPIAPIService) GetHistoryEntity(ctx context.Context, domainId string, resource string, resourceId string) ApiGetHistoryEntityRequest {
+	return ApiGetHistoryEntityRequest{
 		ApiService: a,
 		ctx:        ctx,
-		searchType: searchType,
-		value:      value,
+		domainId:   domainId,
+		resource:   resource,
+		resourceId: resourceId,
 	}
 }
 
 // Execute executes the request
 //
-//	@return HistoryPage
-func (a *HistoryAPIAPIService) SearchHistoryExecute(r ApiSearchHistoryRequest) (*HistoryPage, *http.Response, error) {
+//	@return GetHistoryEntity200Response
+func (a *HistoryAPIAPIService) GetHistoryEntityExecute(r ApiGetHistoryEntityRequest) (*GetHistoryEntity200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *HistoryPage
+		localVarReturnValue *GetHistoryEntity200Response
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "HistoryAPIAPIService.SearchHistory")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "HistoryAPIAPIService.GetHistoryEntity")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/history/{search_type}/{value}"
-	localVarPath = strings.Replace(localVarPath, "{"+"search_type"+"}", url.PathEscape(parameterValueToString(r.searchType, "searchType")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"value"+"}", url.PathEscape(parameterValueToString(r.value, "value")), -1)
+	localVarPath := localBasePath + "/api/v1/domains/{domain_id}/history/{resource}/{resource_id}"
+	localVarPath = strings.Replace(localVarPath, "{"+"domain_id"+"}", url.PathEscape(parameterValueToString(r.domainId, "domainId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"resource"+"}", url.PathEscape(parameterValueToString(r.resource, "resource")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"resource_id"+"}", url.PathEscape(parameterValueToString(r.resourceId, "resourceId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
-	if strlen(r.value) < 1 {
-		return localVarReturnValue, nil, reportError("value must have at least 1 elements")
+	if strlen(r.resourceId) < 1 {
+		return localVarReturnValue, nil, reportError("resourceId must have at least 1 elements")
 	}
 
 	if r.limit != nil {
@@ -130,12 +341,807 @@ func (a *HistoryAPIAPIService) SearchHistoryExecute(r ApiSearchHistoryRequest) (
 		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", defaultValue, "form", "")
 		r.limit = &defaultValue
 	}
-	if r.offset != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "offset", r.offset, "form", "")
+	if r.pageToken != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "page_token", r.pageToken, "form", "")
+	}
+	if r.from != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "from", r.from, "form", "")
+	}
+	if r.to != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "to", r.to, "form", "")
+	}
+	if r.snapshot != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "snapshot", r.snapshot, "form", "")
+	}
+	if r.riskBands != nil {
+		t := *r.riskBands
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "risk_bands", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "risk_bands", t, "form", "multi")
+		}
+	}
+	if r.hreMinAccounts != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_accounts", r.hreMinAccounts, "form", "")
 	} else {
-		var defaultValue int32 = 0
-		parameterAddToHeaderOrQuery(localVarQueryParams, "offset", defaultValue, "form", "")
-		r.offset = &defaultValue
+		var defaultValue int32 = 3
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_accounts", defaultValue, "form", "")
+		r.hreMinAccounts = &defaultValue
+	}
+	if r.hreMinDevices != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_devices", r.hreMinDevices, "form", "")
+	} else {
+		var defaultValue int32 = 4
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_devices", defaultValue, "form", "")
+		r.hreMinDevices = &defaultValue
+	}
+	if r.isVpn != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_vpn", r.isVpn, "form", "")
+	}
+	if r.isTor != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_tor", r.isTor, "form", "")
+	}
+	if r.isProxy != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_proxy", r.isProxy, "form", "")
+	}
+	if r.isPrivacyRelay != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_privacy_relay", r.isPrivacyRelay, "form", "")
+	}
+	if r.networkCheckIncomplete != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "network_check_incomplete", r.networkCheckIncomplete, "form", "")
+	}
+	if r.checkIncomplete != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "check_incomplete", r.checkIncomplete, "form", "")
+	}
+	if r.isAntidetect != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_antidetect", r.isAntidetect, "form", "")
+	}
+	if r.isOsMismatch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_os_mismatch", r.isOsMismatch, "form", "")
+	}
+	if r.isOsNotDetected != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_os_not_detected", r.isOsNotDetected, "form", "")
+	}
+	if r.isTimezoneMismatch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_timezone_mismatch", r.isTimezoneMismatch, "form", "")
+	}
+	if r.isJsDisabled != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_js_disabled", r.isJsDisabled, "form", "")
+	}
+	if r.isBrowserAutomation != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_browser_automation", r.isBrowserAutomation, "form", "")
+	}
+	if r.isIncognito != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_incognito", r.isIncognito, "form", "")
+	}
+	if r.isSearchBot != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_search_bot", r.isSearchBot, "form", "")
+	}
+	if r.ipMismatch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ip_mismatch", r.ipMismatch, "form", "")
+	}
+	if r.latencyTest != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "latency_test", r.latencyTest, "form", "")
+	}
+	if r.deviceSpoofing != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "device_spoofing", r.deviceSpoofing, "form", "")
+	}
+	if r.rateLimited != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "rate_limited", r.rateLimited, "form", "")
+	}
+	if r.aiBot != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ai_bot", r.aiBot, "form", "")
+	}
+	if r.aiBrowser != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ai_browser", r.aiBrowser, "form", "")
+	}
+	if r.riskSignals != nil {
+		t := *r.riskSignals
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "risk_signals", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "risk_signals", t, "form", "multi")
+		}
+	}
+	if r.source != nil {
+		t := *r.source
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "source", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "source", t, "form", "multi")
+		}
+	}
+	if r.campaign != nil {
+		t := *r.campaign
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "campaign", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "campaign", t, "form", "multi")
+		}
+	}
+	if r.deviceIdSource != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "device_id_source", r.deviceIdSource, "form", "")
+	}
+	if r.relation != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "relation", r.relation, "form", "")
+	}
+	if r.relationLimit != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "relation_limit", r.relationLimit, "form", "")
+	} else {
+		var defaultValue int32 = 20
+		parameterAddToHeaderOrQuery(localVarQueryParams, "relation_limit", defaultValue, "form", "")
+		r.relationLimit = &defaultValue
+	}
+	if r.relationPageToken != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "relation_page_token", r.relationPageToken, "form", "")
+	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json", "text/plain"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 401 {
+			var v string
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiListDomainsRequest struct {
+	ctx        context.Context
+	ApiService *HistoryAPIAPIService
+}
+
+func (r ApiListDomainsRequest) Execute() (*ListDomains200Response, *http.Response, error) {
+	return r.ApiService.ListDomainsExecute(r)
+}
+
+/*
+ListDomains List domains for this key
+
+Returns the public domain id for the Private API Key. A site key returns one enabled domain.
+Use `id` as `{domain_id}` on History paths. `domain` is the hostname and is not a path value.
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiListDomainsRequest
+*/
+func (a *HistoryAPIAPIService) ListDomains(ctx context.Context) ApiListDomainsRequest {
+	return ApiListDomainsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return ListDomains200Response
+func (a *HistoryAPIAPIService) ListDomainsExecute(r ApiListDomainsRequest) (*ListDomains200Response, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *ListDomains200Response
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "HistoryAPIAPIService.ListDomains")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/v1/domains"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json", "text/plain", "text/html"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 401 {
+			var v string
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 429 {
+			var v ErrorBody
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 500 {
+			var v ErrorBody
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 502 {
+			var v string
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 504 {
+			var v string
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiListHistoryEntitiesRequest struct {
+	ctx                    context.Context
+	ApiService             *HistoryAPIAPIService
+	domainId               string
+	resource               string
+	limit                  *int32
+	pageToken              *string
+	from                   *time.Time
+	to                     *time.Time
+	snapshot               *string
+	riskBands              *[]string
+	hreMinAccounts         *int32
+	hreMinDevices          *int32
+	ids                    *[]string
+	isVpn                  *string
+	isTor                  *string
+	isProxy                *string
+	isPrivacyRelay         *string
+	networkCheckIncomplete *string
+	checkIncomplete        *string
+	isAntidetect           *string
+	isOsMismatch           *string
+	isOsNotDetected        *string
+	isTimezoneMismatch     *string
+	isJsDisabled           *string
+	isBrowserAutomation    *string
+	isIncognito            *string
+	isSearchBot            *string
+	ipMismatch             *string
+	latencyTest            *string
+	deviceSpoofing         *string
+	rateLimited            *string
+	aiBot                  *string
+	aiBrowser              *string
+	riskSignals            *[]string
+	source                 *[]string
+	campaign               *[]string
+}
+
+// Maximum records in the page, from 1 through 100.
+func (r ApiListHistoryEntitiesRequest) Limit(limit int32) ApiListHistoryEntitiesRequest {
+	r.limit = &limit
+	return r
+}
+
+// Opaque token from the previous page. Omit it on the first page.
+func (r ApiListHistoryEntitiesRequest) PageToken(pageToken string) ApiListHistoryEntitiesRequest {
+	r.pageToken = &pageToken
+	return r
+}
+
+// Inclusive RFC3339 start. Send &#x60;to&#x60; as well, or send neither.
+func (r ApiListHistoryEntitiesRequest) From(from time.Time) ApiListHistoryEntitiesRequest {
+	r.from = &from
+	return r
+}
+
+// Exclusive RFC3339 end. Send &#x60;from&#x60; as well, or send neither.
+func (r ApiListHistoryEntitiesRequest) To(to time.Time) ApiListHistoryEntitiesRequest {
+	r.to = &to
+	return r
+}
+
+// Value of the History-Snapshot header. Continues that read.
+func (r ApiListHistoryEntitiesRequest) Snapshot(snapshot string) ApiListHistoryEntitiesRequest {
+	r.snapshot = &snapshot
+	return r
+}
+
+// Repeat for trusted, suspicious, or dangerous.
+func (r ApiListHistoryEntitiesRequest) RiskBands(riskBands []string) ApiListHistoryEntitiesRequest {
+	r.riskBands = &riskBands
+	return r
+}
+
+// Minimum linked accounts for a high-risk event, from 3 to 99.
+func (r ApiListHistoryEntitiesRequest) HreMinAccounts(hreMinAccounts int32) ApiListHistoryEntitiesRequest {
+	r.hreMinAccounts = &hreMinAccounts
+	return r
+}
+
+// Minimum linked devices for a high-risk event, from 4 to 99.
+func (r ApiListHistoryEntitiesRequest) HreMinDevices(hreMinDevices int32) ApiListHistoryEntitiesRequest {
+	r.hreMinDevices = &hreMinDevices
+	return r
+}
+
+// User ids. Repeat the key. User list only, at most 100.
+func (r ApiListHistoryEntitiesRequest) Ids(ids []string) ApiListHistoryEntitiesRequest {
+	r.ids = &ids
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_vpn&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsVpn(isVpn string) ApiListHistoryEntitiesRequest {
+	r.isVpn = &isVpn
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_tor&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsTor(isTor string) ApiListHistoryEntitiesRequest {
+	r.isTor = &isTor
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_proxy&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsProxy(isProxy string) ApiListHistoryEntitiesRequest {
+	r.isProxy = &isProxy
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_privacy_relay&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsPrivacyRelay(isPrivacyRelay string) ApiListHistoryEntitiesRequest {
+	r.isPrivacyRelay = &isPrivacyRelay
+	return r
+}
+
+// When set, keep only rows whose &#x60;network_check_incomplete&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) NetworkCheckIncomplete(networkCheckIncomplete string) ApiListHistoryEntitiesRequest {
+	r.networkCheckIncomplete = &networkCheckIncomplete
+	return r
+}
+
+// When set, keep only rows whose &#x60;check_incomplete&#x60; equals this value. Always false for search-engine crawlers, matching the row. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) CheckIncomplete(checkIncomplete string) ApiListHistoryEntitiesRequest {
+	r.checkIncomplete = &checkIncomplete
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_antidetect&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsAntidetect(isAntidetect string) ApiListHistoryEntitiesRequest {
+	r.isAntidetect = &isAntidetect
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_os_mismatch&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsOsMismatch(isOsMismatch string) ApiListHistoryEntitiesRequest {
+	r.isOsMismatch = &isOsMismatch
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_os_not_detected&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsOsNotDetected(isOsNotDetected string) ApiListHistoryEntitiesRequest {
+	r.isOsNotDetected = &isOsNotDetected
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_timezone_mismatch&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsTimezoneMismatch(isTimezoneMismatch string) ApiListHistoryEntitiesRequest {
+	r.isTimezoneMismatch = &isTimezoneMismatch
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_js_disabled&#x60; equals this value. Always false for search-engine crawlers, matching the row. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsJsDisabled(isJsDisabled string) ApiListHistoryEntitiesRequest {
+	r.isJsDisabled = &isJsDisabled
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_browser_automation&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsBrowserAutomation(isBrowserAutomation string) ApiListHistoryEntitiesRequest {
+	r.isBrowserAutomation = &isBrowserAutomation
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_incognito&#x60; equals this value. Always false for search-engine crawlers, matching the row. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsIncognito(isIncognito string) ApiListHistoryEntitiesRequest {
+	r.isIncognito = &isIncognito
+	return r
+}
+
+// When set, keep only rows whose &#x60;is_search_bot&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) IsSearchBot(isSearchBot string) ApiListHistoryEntitiesRequest {
+	r.isSearchBot = &isSearchBot
+	return r
+}
+
+// Keep only rows whose &#x60;ip_mismatch&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiListHistoryEntitiesRequest) IpMismatch(ipMismatch string) ApiListHistoryEntitiesRequest {
+	r.ipMismatch = &ipMismatch
+	return r
+}
+
+// Keep only rows whose &#x60;latency_test&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiListHistoryEntitiesRequest) LatencyTest(latencyTest string) ApiListHistoryEntitiesRequest {
+	r.latencyTest = &latencyTest
+	return r
+}
+
+// Keep only rows whose &#x60;device_spoofing&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiListHistoryEntitiesRequest) DeviceSpoofing(deviceSpoofing string) ApiListHistoryEntitiesRequest {
+	r.deviceSpoofing = &deviceSpoofing
+	return r
+}
+
+// When set, keep only rows whose &#x60;rate_limited&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) RateLimited(rateLimited string) ApiListHistoryEntitiesRequest {
+	r.rateLimited = &rateLimited
+	return r
+}
+
+// Keep only rows whose &#x60;ai_bot&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiListHistoryEntitiesRequest) AiBot(aiBot string) ApiListHistoryEntitiesRequest {
+	r.aiBot = &aiBot
+	return r
+}
+
+// Keep only rows whose &#x60;ai_browser&#x60; equals this value. Omit to leave unconstrained.
+func (r ApiListHistoryEntitiesRequest) AiBrowser(aiBrowser string) ApiListHistoryEntitiesRequest {
+	r.aiBrowser = &aiBrowser
+	return r
+}
+
+// Repeat a public signal code. Several codes combine with OR.
+func (r ApiListHistoryEntitiesRequest) RiskSignals(riskSignals []string) ApiListHistoryEntitiesRequest {
+	r.riskSignals = &riskSignals
+	return r
+}
+
+// Traffic source. Together with campaign, at most 8 values, matched if any value matches. _empty means no referrer.
+func (r ApiListHistoryEntitiesRequest) Source(source []string) ApiListHistoryEntitiesRequest {
+	r.source = &source
+	return r
+}
+
+// Campaign name. No campaign matches visits with no campaign.
+func (r ApiListHistoryEntitiesRequest) Campaign(campaign []string) ApiListHistoryEntitiesRequest {
+	r.campaign = &campaign
+	return r
+}
+
+func (r ApiListHistoryEntitiesRequest) Execute() (*ListHistoryEntities200Response, *http.Response, error) {
+	return r.ApiService.ListHistoryEntitiesExecute(r)
+}
+
+/*
+ListHistoryEntities List History entities
+
+Lists `identifications` or `user` for one domain. `{domain_id}` is the public domain UUID
+from `GET /api/v1/domains`. Literal `all` returns `403 domain_scope_not_supported`. A list of
+`visitor`, `device` or `ip` returns `403 entity_list_disabled`.
+
+Repeat `risk_bands`, `risk_signals`, `source`, `campaign` and `ids`. Flags are `true` or `false`
+and combine with AND. Signal codes combine with OR. `source` and `campaign` are one OR group,
+at most 8 values together. `is_abuser`, `is_datacenter` and
+`is_stun_not_checked` return `400`. A nested `filter` or `chips` returns `400`.
+
+The old `/api/v1/history/{search_type}/{value}` route returns `410 endpoint_retired`.
+Page with `page_token`, not `offset`. `from` and `to` are both required when either is set.
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param domainId Public domain UUID of the site whose History is being read.
+	@param resource History resource. Lists are enabled for identifications and user only.
+	@return ApiListHistoryEntitiesRequest
+*/
+func (a *HistoryAPIAPIService) ListHistoryEntities(ctx context.Context, domainId string, resource string) ApiListHistoryEntitiesRequest {
+	return ApiListHistoryEntitiesRequest{
+		ApiService: a,
+		ctx:        ctx,
+		domainId:   domainId,
+		resource:   resource,
+	}
+}
+
+// Execute executes the request
+//
+//	@return ListHistoryEntities200Response
+func (a *HistoryAPIAPIService) ListHistoryEntitiesExecute(r ApiListHistoryEntitiesRequest) (*ListHistoryEntities200Response, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *ListHistoryEntities200Response
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "HistoryAPIAPIService.ListHistoryEntities")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/v1/domains/{domain_id}/history/{resource}"
+	localVarPath = strings.Replace(localVarPath, "{"+"domain_id"+"}", url.PathEscape(parameterValueToString(r.domainId, "domainId")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"resource"+"}", url.PathEscape(parameterValueToString(r.resource, "resource")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	if r.limit != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", r.limit, "form", "")
+	} else {
+		var defaultValue int32 = 20
+		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", defaultValue, "form", "")
+		r.limit = &defaultValue
+	}
+	if r.pageToken != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "page_token", r.pageToken, "form", "")
+	}
+	if r.from != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "from", r.from, "form", "")
+	}
+	if r.to != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "to", r.to, "form", "")
+	}
+	if r.snapshot != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "snapshot", r.snapshot, "form", "")
+	}
+	if r.riskBands != nil {
+		t := *r.riskBands
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "risk_bands", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "risk_bands", t, "form", "multi")
+		}
+	}
+	if r.hreMinAccounts != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_accounts", r.hreMinAccounts, "form", "")
+	} else {
+		var defaultValue int32 = 3
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_accounts", defaultValue, "form", "")
+		r.hreMinAccounts = &defaultValue
+	}
+	if r.hreMinDevices != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_devices", r.hreMinDevices, "form", "")
+	} else {
+		var defaultValue int32 = 4
+		parameterAddToHeaderOrQuery(localVarQueryParams, "hre_min_devices", defaultValue, "form", "")
+		r.hreMinDevices = &defaultValue
+	}
+	if r.ids != nil {
+		t := *r.ids
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "ids", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "ids", t, "form", "multi")
+		}
+	}
+	if r.isVpn != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_vpn", r.isVpn, "form", "")
+	}
+	if r.isTor != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_tor", r.isTor, "form", "")
+	}
+	if r.isProxy != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_proxy", r.isProxy, "form", "")
+	}
+	if r.isPrivacyRelay != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_privacy_relay", r.isPrivacyRelay, "form", "")
+	}
+	if r.networkCheckIncomplete != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "network_check_incomplete", r.networkCheckIncomplete, "form", "")
+	}
+	if r.checkIncomplete != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "check_incomplete", r.checkIncomplete, "form", "")
+	}
+	if r.isAntidetect != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_antidetect", r.isAntidetect, "form", "")
+	}
+	if r.isOsMismatch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_os_mismatch", r.isOsMismatch, "form", "")
+	}
+	if r.isOsNotDetected != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_os_not_detected", r.isOsNotDetected, "form", "")
+	}
+	if r.isTimezoneMismatch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_timezone_mismatch", r.isTimezoneMismatch, "form", "")
+	}
+	if r.isJsDisabled != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_js_disabled", r.isJsDisabled, "form", "")
+	}
+	if r.isBrowserAutomation != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_browser_automation", r.isBrowserAutomation, "form", "")
+	}
+	if r.isIncognito != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_incognito", r.isIncognito, "form", "")
+	}
+	if r.isSearchBot != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "is_search_bot", r.isSearchBot, "form", "")
+	}
+	if r.ipMismatch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ip_mismatch", r.ipMismatch, "form", "")
+	}
+	if r.latencyTest != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "latency_test", r.latencyTest, "form", "")
+	}
+	if r.deviceSpoofing != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "device_spoofing", r.deviceSpoofing, "form", "")
+	}
+	if r.rateLimited != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "rate_limited", r.rateLimited, "form", "")
+	}
+	if r.aiBot != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ai_bot", r.aiBot, "form", "")
+	}
+	if r.aiBrowser != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ai_browser", r.aiBrowser, "form", "")
+	}
+	if r.riskSignals != nil {
+		t := *r.riskSignals
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "risk_signals", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "risk_signals", t, "form", "multi")
+		}
+	}
+	if r.source != nil {
+		t := *r.source
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "source", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "source", t, "form", "multi")
+		}
+	}
+	if r.campaign != nil {
+		t := *r.campaign
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "campaign", s.Index(i).Interface(), "form", "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "campaign", t, "form", "multi")
+		}
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

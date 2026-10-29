@@ -40,6 +40,7 @@ func main() {
 	flag.Parse()
 
 	client, err := shieldlabs.NewClient(os.Getenv("SHIELDLABS_API_KEY"),
+		shieldlabs.WithDomainID(os.Getenv("SHIELDLABS_DOMAIN_ID")),
 		// Optional override for development and tests; empty keeps the default.
 		shieldlabs.WithBaseURL(os.Getenv("SHIELDLABS_API_BASE_URL")))
 	if err != nil {

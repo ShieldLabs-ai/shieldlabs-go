@@ -20,7 +20,7 @@ func TestHistorySearchFixturePage(t *testing.T) {
 	})
 	c, _ := newTestClient(t, srv.URL)
 
-	page, err := c.History.Search(context.Background(), LookupDeviceID, "AC7C303D-971B-41D1-8E25-CD5B46B46AED", &HistorySearchOptions{Limit: 50, Offset: 100})
+	page, err := c.History.Search(context.Background(), LookupDeviceID, "AC7C303D-971B-41D1-8E25-CD5B46B46AED", &HistorySearchOptions{Limit: 50})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,14 +40,14 @@ func TestHistorySearchFixturePage(t *testing.T) {
 	if req.Method != http.MethodGet {
 		t.Errorf("method %s", req.Method)
 	}
-	if got := req.URL.EscapedPath(); got != "/api/v1/history/device_id/ac7c303d-971b-41d1-8e25-cd5b46b46aed" {
+	if got := req.URL.EscapedPath(); got != "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/device/ac7c303d-971b-41d1-8e25-cd5b46b46aed" {
 		t.Errorf("path %s (UUIDs are sent lowercase)", got)
 	}
 	if got := req.URL.Query().Get("limit"); got != "50" {
 		t.Errorf("limit %s", got)
 	}
-	if got := req.URL.Query().Get("offset"); got != "100" {
-		t.Errorf("offset %s", got)
+	if req.URL.Query().Has("offset") {
+		t.Errorf("offset is not sent: %s", req.URL.RawQuery)
 	}
 	assertStandardHeaders(t, req, "Bearer "+testAPIKey)
 }
@@ -87,10 +87,10 @@ func TestHistorySearchEmptyPageAndDefaults(t *testing.T) {
 	}
 	for i := 0; i < 2; i++ {
 		q := srv.Request(i).URL.Query()
-		if q.Get("limit") != "20" || q.Get("offset") != "0" {
+		if q.Get("limit") != "20" || q.Has("offset") {
 			t.Errorf("request %d query = %s", i, srv.Request(i).URL.RawQuery)
 		}
-		if got := srv.Request(i).URL.EscapedPath(); got != "/api/v1/history/ip/192.0.2.44" {
+		if got := srv.Request(i).URL.EscapedPath(); got != "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/ip/192.0.2.44" {
 			t.Errorf("path %s", got)
 		}
 	}
@@ -105,28 +105,28 @@ func TestHistorySearchUserHIDEncoding(t *testing.T) {
 	srv := newRecordingServer(t, func(w http.ResponseWriter, r *http.Request, n int) {
 		// The decoded path is what a Go server matches against.
 		mu.Lock()
-		values = append(values, strings.TrimPrefix(r.URL.Path, "/api/v1/history/user_hid/"))
+		values = append(values, strings.TrimPrefix(r.URL.Path, "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/"))
 		mu.Unlock()
 		writeJSON(w, 200, emptyPage)
 	})
 	c, _ := newTestClient(t, srv.URL)
 	tests := []struct{ value, path string }{
-		{"b c?d%é#", "/api/v1/history/user_hid/b%20c%3Fd%25%C3%A9%23"},
-		{"anonymous", "/api/v1/history/user_hid/anonymous"},
-		{"Mixed+Case", "/api/v1/history/user_hid/Mixed+Case"},
-		{" ", "/api/v1/history/user_hid/%20"},
-		{"a,b", "/api/v1/history/user_hid/a,b"},
-		{"a;b", "/api/v1/history/user_hid/a;b"},
-		{"x$y&z", "/api/v1/history/user_hid/x$y&z"},
-		{"a@b", "/api/v1/history/user_hid/a@b"},
-		{"a:b=c", "/api/v1/history/user_hid/a:b=c"},
-		{"a!b c", "/api/v1/history/user_hid/a%21b%20c"},
-		{"!'()*", "/api/v1/history/user_hid/%21%27%28%29%2A"},
-		{"*", "/api/v1/history/user_hid/%2A"},
-		{"a%2Fb", "/api/v1/history/user_hid/a%252Fb"},
-		{"-._~", "/api/v1/history/user_hid/-._~"},
-		{"...", "/api/v1/history/user_hid/..."},
-		{"ü", "/api/v1/history/user_hid/%C3%BC"},
+		{"b c?d%é#", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/b%20c%3Fd%25%C3%A9%23"},
+		{"anonymous", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/anonymous"},
+		{"Mixed+Case", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/Mixed+Case"},
+		{" ", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/%20"},
+		{"a,b", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/a,b"},
+		{"a;b", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/a;b"},
+		{"x$y&z", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/x$y&z"},
+		{"a@b", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/a@b"},
+		{"a:b=c", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/a:b=c"},
+		{"a!b c", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/a%21b%20c"},
+		{"!'()*", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/%21%27%28%29%2A"},
+		{"*", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/%2A"},
+		{"a%2Fb", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/a%252Fb"},
+		{"-._~", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/-._~"},
+		{"...", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/..."},
+		{"ü", "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/%C3%BC"},
 	}
 	for i, tc := range tests {
 		if _, err := c.History.Search(context.Background(), LookupUserHID, tc.value, nil); err != nil {
@@ -149,7 +149,7 @@ func TestHistorySearchUserHIDEncoding(t *testing.T) {
 // path is kept), so the server decodes the value instead of comparing the
 // escaped text.
 func TestEscapePathValueIsCanonical(t *testing.T) {
-	const prefix = "/api/v1/history/user_hid/"
+	const prefix = "/api/v1/domains/11111111-1111-4111-8111-111111111111/history/user/"
 	values := []string{"", "*", "a b", "ü", "日本", "%", "%2F", "a%2Cb", "\x00\x7f\xff", "?#[]{}|\\^`\"<>", "$&+,:;=@"}
 	for c := 0; c < 256; c++ {
 		if c != '/' {
@@ -248,6 +248,9 @@ func (p *pagedServer) handler(w http.ResponseWriter, r *http.Request, n int) {
 	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	if !r.URL.Query().Has("offset") {
+		offset = (n - 1) * limit
+	}
 	p.offsets = append(p.offsets, offset)
 	var page []string
 	for i := offset; i < len(p.rows) && i < offset+limit; i++ {
@@ -482,5 +485,41 @@ func TestHistoryUnreadablePage(t *testing.T) {
 	page, err = c2.History.Search(context.Background(), LookupDeviceID, uuidN(1), nil)
 	if err != nil || page.Data == nil || len(page.Data) != 0 {
 		t.Fatalf("page = %+v, err = %v", page, err)
+	}
+}
+
+func TestDomainsAndFlatListFilters(t *testing.T) {
+	srv := newRecordingServer(t, func(w http.ResponseWriter, r *http.Request, n int) {
+		if r.URL.Path == "/api/v1/domains" {
+			writeJSON(w, 200, `{"domains":[{"id":"11111111-1111-4111-8111-111111111111","domain":"example.com"}]}`)
+			return
+		}
+		writeJSON(w, 200, `{"data":[],"total":0}`)
+	})
+	c, _ := newTestClient(t, srv.URL)
+	domains, err := c.Domains(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(domains) != 1 || domains[0].Domain != "example.com" || domains[0].ID != testDomainID {
+		t.Fatalf("domains = %+v", domains)
+	}
+	_, err = c.History.List(context.Background(), "identifications", &HistorySearchOptions{
+		Limit: 5,
+		Query: url.Values{"is_vpn": {"true"}, "risk_bands": {"trusted", "suspicious"}, "source": {"google"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := srv.Request(1)
+	if req.URL.EscapedPath() != "/api/v1/domains/"+testDomainID+"/history/identifications" {
+		t.Fatalf("path %s", req.URL.EscapedPath())
+	}
+	q := req.URL.Query()
+	if q.Get("limit") != "5" || q.Get("is_vpn") != "true" || q.Get("source") != "google" {
+		t.Fatalf("query %s", req.URL.RawQuery)
+	}
+	if strings.Join(q["risk_bands"], ",") != "trusted,suspicious" {
+		t.Fatalf("risk_bands %v", q["risk_bands"])
 	}
 }
