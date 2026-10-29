@@ -47,8 +47,8 @@ type DetectionFlags struct {
 	// An anti-detect browser was detected.
 	AntiDetectBrowser bool `json:"anti_detect_browser"`
 	DeviceSpoofing    bool `json:"device_spoofing"`
-	// The visitor exceeded the identification rate limit. Older payloads used banned_ip.
-	RateLimited bool `json:"rate_limited"`
+	// The visitor exceeded the identification rate limit.
+	RateLimited bool `json:"banned_ip"`
 	// The browser runs in a private window. False for a search-engine crawler, an AI bot, or an AI browser. Weight 0, and present in signals when true.
 	Incognito bool `json:"incognito"`
 	// A search-engine crawler. Its Risk Score is always 0. Weight 0, and present in signals when true.
@@ -605,7 +605,7 @@ func (o DetectionFlags) ToMap() (map[string]interface{}, error) {
 	toSerialize["latency_test"] = o.LatencyTest
 	toSerialize["anti_detect_browser"] = o.AntiDetectBrowser
 	toSerialize["device_spoofing"] = o.DeviceSpoofing
-	toSerialize["rate_limited"] = o.RateLimited
+	toSerialize["banned_ip"] = o.RateLimited
 	toSerialize["incognito"] = o.Incognito
 	toSerialize["search_bot"] = o.SearchBot
 	toSerialize["ai_bot"] = o.AiBot
@@ -633,7 +633,7 @@ func (o *DetectionFlags) UnmarshalJSON(data []byte) (err error) {
 		"latency_test",
 		"anti_detect_browser",
 		"device_spoofing",
-		"rate_limited",
+		"banned_ip",
 		"incognito",
 		"search_bot",
 		"ai_bot",

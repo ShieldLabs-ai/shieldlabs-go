@@ -94,7 +94,7 @@ func identificationFromEntityOrRow(row map[string]any) (*Identification, error) 
 			}
 		}
 	}
-	aliases := map[string]string{"banned_ip": "rate_limited", "private_relay": "privacy_relay", "network_check_incomplete": "stun_not_checked", "latency_test": "ws_tcp_latency"}
+	aliases := map[string]string{"private_relay": "privacy_relay", "network_check_incomplete": "stun_not_checked", "latency_test": "ws_tcp_latency"}
 	for _, key := range flagNames {
 		*result.DetectionFlags.field(key) = names[key] || names[aliases[key]]
 	}

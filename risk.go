@@ -22,7 +22,7 @@ const (
 	BandDangerous Band = "dangerous"
 	// BandRateLimited marks a score above 100 (999): the rate-limit marker,
 	// which is not a score.
-	BandRateLimited Band = "rate_limited"
+	BandRateLimited Band = "banned_ip"
 )
 
 // RiskBand returns the band of a Risk Score: trusted (0-29), suspicious
@@ -68,7 +68,7 @@ const (
 	// unknown.
 	ReasonStale Reason = "stale"
 	// ReasonRateLimited: the Risk Score is the rate-limit marker.
-	ReasonRateLimited Reason = "rate_limited"
+	ReasonRateLimited Reason = "banned_ip"
 	// ReasonNoDeviceSignals: the device ID is the nil UUID.
 	ReasonNoDeviceSignals Reason = "no_device_signals"
 	// ReasonBlockedFlag: a flag listed in BlockFlags is set (see
@@ -119,7 +119,7 @@ type Evaluation struct {
 //  1. missing: ident is nil (never treat a missing identification as clean);
 //  2. replayed: opts.IsReplay reports the request ID as already used;
 //  3. stale: the identification is older than opts.MaxAge;
-//  4. rate_limited: the Risk Score is the rate-limit marker;
+//  4. banned_ip: the Risk Score is the rate-limit marker;
 //  5. no_device_signals: the device ID is the nil UUID;
 //  6. blocked_flag: a flag in opts.BlockFlags is set;
 //  7. blocked_band: the risk band is in opts.BlockBands.

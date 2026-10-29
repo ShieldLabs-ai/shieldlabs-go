@@ -24,11 +24,11 @@ func TestRiskBandCases(t *testing.T) {
 		if got := RiskBand(c.Score); string(got) != c.Band {
 			t.Errorf("RiskBand(%d) = %s, want %s", c.Score, got, c.Band)
 		}
-		if got := IsRateLimited(c.Score); got != (c.Band == "rate_limited") {
+		if got := IsRateLimited(c.Score); got != (c.Band == "banned_ip") {
 			t.Errorf("IsRateLimited(%d) = %v", c.Score, got)
 		}
 		ident := &Identification{RiskScore: c.Score}
-		if string(ident.Band()) != c.Band || ident.IsRateLimited() != (c.Band == "rate_limited") {
+		if string(ident.Band()) != c.Band || ident.IsRateLimited() != (c.Band == "banned_ip") {
 			t.Errorf("Identification methods disagree for %d", c.Score)
 		}
 	}

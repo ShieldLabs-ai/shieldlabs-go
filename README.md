@@ -159,7 +159,7 @@ ident, err := client.Identifications.Get(ctx, identificationID, &shieldlabs.GetI
 | `missing` | the identification is nil |
 | `replayed` | your `IsReplay` callback reports the request ID as already used |
 | `stale` | it is older than `MaxAge` (default 5 minutes, by `ObservedAt`) |
-| `rate_limited` | the Risk Score is the rate-limit marker (above 100, in practice 999): ShieldLabs writes one such identification when a visitor IP goes over the identification rate limit, and request IDs issued while that IP is blocked get no identification at all (`missing`) |
+| `banned_ip` | the Risk Score is the rate-limit marker (above 100, in practice 999): ShieldLabs writes one such identification when a visitor IP goes over the identification rate limit, and request IDs issued while that IP is blocked get no identification at all (`missing`) |
 | `no_device_signals` | the device ID is the nil UUID `00000000-0000-0000-0000-000000000000` |
 | `blocked_flag` | a flag in `BlockFlags` is set (default `browser_automation`, `javascript_disabled`) |
 | `blocked_band` | the band is in `BlockBands` (default `dangerous`) |
