@@ -130,7 +130,7 @@ type HistoryRow struct {
 	// Same meaning as `detection_flags.device_spoofing`.
 	DeviceSpoofing bool `json:"device_spoofing"`
 	// Same meaning as `detection_flags.banned_ip`.
-	RateLimited bool `json:"banned_ip"`
+	BannedIp bool `json:"banned_ip"`
 	// Same meaning as `detection_flags.ai_bot`.
 	AiBot bool `json:"ai_bot"`
 	// Same meaning as `detection_flags.ai_browser`.
@@ -144,7 +144,7 @@ type _HistoryRow HistoryRow
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, createdAt string, ver int64, isVpn bool, isTor bool, isProxy bool, isPrivacyRelay bool, networkCheckIncomplete bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool, detectionFlags DetectionFlags, ipMismatch bool, latencyTest bool, deviceSpoofing bool, rateLimited bool, aiBot bool, aiBrowser bool) *HistoryRow {
+func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, createdAt string, ver int64, isVpn bool, isTor bool, isProxy bool, isPrivacyRelay bool, networkCheckIncomplete bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool, detectionFlags DetectionFlags, ipMismatch bool, latencyTest bool, deviceSpoofing bool, bannedIp bool, aiBot bool, aiBrowser bool) *HistoryRow {
 	this := HistoryRow{}
 	this.IdentificationId = identificationId
 	this.SessionId = sessionId
@@ -180,7 +180,7 @@ func NewHistoryRow(identificationId string, sessionId string, cookieId string, d
 	this.IpMismatch = ipMismatch
 	this.LatencyTest = latencyTest
 	this.DeviceSpoofing = deviceSpoofing
-	this.RateLimited = rateLimited
+	this.BannedIp = bannedIp
 	this.AiBot = aiBot
 	this.AiBrowser = aiBrowser
 	return &this
@@ -1682,28 +1682,28 @@ func (o *HistoryRow) SetDeviceSpoofing(v bool) {
 	o.DeviceSpoofing = v
 }
 
-// GetRateLimited returns the RateLimited field value
-func (o *HistoryRow) GetRateLimited() bool {
+// GetBannedIp returns the BannedIp field value
+func (o *HistoryRow) GetBannedIp() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.RateLimited
+	return o.BannedIp
 }
 
-// GetRateLimitedOk returns a tuple with the RateLimited field value
+// GetBannedIpOk returns a tuple with the BannedIp field value
 // and a boolean to check if the value has been set.
-func (o *HistoryRow) GetRateLimitedOk() (*bool, bool) {
+func (o *HistoryRow) GetBannedIpOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RateLimited, true
+	return &o.BannedIp, true
 }
 
-// SetRateLimited sets field value
-func (o *HistoryRow) SetRateLimited(v bool) {
-	o.RateLimited = v
+// SetBannedIp sets field value
+func (o *HistoryRow) SetBannedIp(v bool) {
+	o.BannedIp = v
 }
 
 // GetAiBot returns the AiBot field value
@@ -1861,7 +1861,7 @@ func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize["ip_mismatch"] = o.IpMismatch
 	toSerialize["latency_test"] = o.LatencyTest
 	toSerialize["device_spoofing"] = o.DeviceSpoofing
-	toSerialize["banned_ip"] = o.RateLimited
+	toSerialize["banned_ip"] = o.BannedIp
 	toSerialize["ai_bot"] = o.AiBot
 	toSerialize["ai_browser"] = o.AiBrowser
 

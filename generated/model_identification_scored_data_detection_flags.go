@@ -389,15 +389,8 @@ func (o *IdentificationScoredDataDetectionFlags) SetBannedIp(v bool) {
 	o.BannedIp = &v
 }
 
-	return *o.RateLimited
-}
-
-	return o.RateLimited, true
-}
-
-	return false
-}
-
+// GetCheckIncomplete returns the CheckIncomplete field value if set, zero value otherwise.
+func (o *IdentificationScoredDataDetectionFlags) GetCheckIncomplete() bool {
 	if o == nil || IsNil(o.CheckIncomplete) {
 		var ret bool
 		return ret
@@ -1062,7 +1055,6 @@ func (o *IdentificationScoredDataDetectionFlags) UnmarshalJSON(data []byte) (err
 		delete(additionalProperties, "stun_not_checked")
 		delete(additionalProperties, "latency_test")
 		delete(additionalProperties, "ws_tcp_latency")
-		delete(additionalProperties, "banned_ip")
 		delete(additionalProperties, "banned_ip")
 		delete(additionalProperties, "check_incomplete")
 		delete(additionalProperties, "os_not_detected")

@@ -704,15 +704,8 @@ func (o *LegacyDetectionFlags) SetBannedIp(v bool) {
 	o.BannedIp = &v
 }
 
-	return *o.RateLimited
-}
-
-	return o.RateLimited, true
-}
-
-	return false
-}
-
+// GetAiBot returns the AiBot field value if set, zero value otherwise.
+func (o *LegacyDetectionFlags) GetAiBot() bool {
 	if o == nil || IsNil(o.AiBot) {
 		var ret bool
 		return ret
