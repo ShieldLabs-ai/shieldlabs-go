@@ -104,7 +104,7 @@ func ExampleRiskBand() {
 	// 0 trusted
 	// 30 suspicious
 	// 60 dangerous
-	// 999 rate_limited
+	// 999 banned_ip
 }
 
 func ExampleEvaluateIdentification() {

@@ -13,7 +13,7 @@ import (
 const entityID = "33333333-3333-4333-8333-333333333333"
 
 func entityCard(score any) map[string]any {
-	return map[string]any{"id": entityID, "type": "identification", "created_at": "2026-10-29T09:00:00.123Z", "risk": map[string]any{"state": "ok", "score": score, "band": "suspicious"}, "signals": map[string]any{"state": "ok", "items": []any{"rate_limited", "vpn"}}, "public_ip": "203.0.113.24", "traffic": map[string]any{"channel": "paid", "utm_source": "google"}}
+	return map[string]any{"id": entityID, "type": "identification", "created_at": "2026-10-29T09:00:00.123Z", "risk": map[string]any{"state": "ok", "score": score, "band": "suspicious"}, "signals": map[string]any{"state": "ok", "items": []any{"banned_ip", "vpn"}}, "public_ip": "203.0.113.24", "traffic": map[string]any{"channel": "paid", "utm_source": "google"}}
 }
 func TestGetCurrentEntityCard(t *testing.T) {
 	for _, score := range []int{0, 30, 60, 100} {

@@ -56,7 +56,7 @@ type ApiGetHistoryEntityRequest struct {
 	ipMismatch             *string
 	latencyTest            *string
 	deviceSpoofing         *string
-	rateLimited            *string
+	bannedIp               *string
 	aiBot                  *string
 	aiBrowser              *string
 	riskSignals            *[]string
@@ -218,9 +218,9 @@ func (r ApiGetHistoryEntityRequest) DeviceSpoofing(deviceSpoofing string) ApiGet
 	return r
 }
 
-// When set, keep only rows whose &#x60;rate_limited&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
-func (r ApiGetHistoryEntityRequest) RateLimited(rateLimited string) ApiGetHistoryEntityRequest {
-	r.rateLimited = &rateLimited
+// When set, keep only rows whose &#x60;banned_ip&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiGetHistoryEntityRequest) BannedIp(bannedIp string) ApiGetHistoryEntityRequest {
+	r.bannedIp = &bannedIp
 	return r
 }
 
@@ -429,8 +429,8 @@ func (a *HistoryAPIAPIService) GetHistoryEntityExecute(r ApiGetHistoryEntityRequ
 	if r.deviceSpoofing != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "device_spoofing", r.deviceSpoofing, "form", "")
 	}
-	if r.rateLimited != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "rate_limited", r.rateLimited, "form", "")
+	if r.bannedIp != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "banned_ip", r.bannedIp, "form", "")
 	}
 	if r.aiBot != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "ai_bot", r.aiBot, "form", "")
@@ -738,7 +738,7 @@ type ApiListHistoryEntitiesRequest struct {
 	ipMismatch             *string
 	latencyTest            *string
 	deviceSpoofing         *string
-	rateLimited            *string
+	bannedIp               *string
 	aiBot                  *string
 	aiBrowser              *string
 	riskSignals            *[]string
@@ -902,9 +902,9 @@ func (r ApiListHistoryEntitiesRequest) DeviceSpoofing(deviceSpoofing string) Api
 	return r
 }
 
-// When set, keep only rows whose &#x60;rate_limited&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
-func (r ApiListHistoryEntitiesRequest) RateLimited(rateLimited string) ApiListHistoryEntitiesRequest {
-	r.rateLimited = &rateLimited
+// When set, keep only rows whose &#x60;banned_ip&#x60; equals this value. Omit the parameter to leave the flag unconstrained. The only accepted values are &#x60;true&#x60; and &#x60;false&#x60;.
+func (r ApiListHistoryEntitiesRequest) BannedIp(bannedIp string) ApiListHistoryEntitiesRequest {
+	r.bannedIp = &bannedIp
 	return r
 }
 
@@ -1101,8 +1101,8 @@ func (a *HistoryAPIAPIService) ListHistoryEntitiesExecute(r ApiListHistoryEntiti
 	if r.deviceSpoofing != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "device_spoofing", r.deviceSpoofing, "form", "")
 	}
-	if r.rateLimited != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "rate_limited", r.rateLimited, "form", "")
+	if r.bannedIp != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "banned_ip", r.bannedIp, "form", "")
 	}
 	if r.aiBot != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "ai_bot", r.aiBot, "form", "")

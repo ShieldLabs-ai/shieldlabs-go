@@ -50,7 +50,7 @@ type HistoryRow struct {
 	Country string `json:"country"`
 	// How the visitor connected. Known values: - `direct`: a regular connection; - `mobile`: a mobile carrier network; - `vpn`: a VPN; - `proxy`: a proxy, datacenter or hosting network (search-engine crawlers are reported here too); - `tor`: the Tor network; - `private_relay`: a privacy relay such as iCloud Private Relay. Older visits may say `privacy_relay`; - `browser_vpn_proxy`: a VPN or proxy built into the browser or one of its extensions; - `unknown`: not enough data.  The value can say `vpn` while `detection_flags.vpn` is `false` (IP intelligence classified the network, but the scored VPN check did not fire). Branch on `detection_flags` for decisions. The set is open: keep values added in later versions and treat them as `unknown`.
 	ConnectionType string `json:"connection_type"`
-	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"rate_limited\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; Identification IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
+	// Risk Score from 0 (no risk found) to 100. Search-engine crawlers always score 0.  Risk bands are computed on your side from the score; no band field exists on the wire: - trusted: 0-29 - suspicious: 30-59 - dangerous: 60-100  A value above 100 is not a score. `999` is the rate-limit marker: the visitor's IP went over the ingest rate limit, and the identification carries exactly one signal, `{\"name\":\"banned_ip\",\"weight\":999}`, usually with nil identifiers. Treat every value above 100 as rate limited. One marker is written when the IP goes over the limit; Identification IDs issued while it stays blocked get no row and no webhook, so they stay unverified.  The score usually equals the sum of the signal weights capped at 100, but carried-forward verdicts and corrections make that unreliable: never recompute or validate it yourself.
 	Score int32 `json:"score"`
 	// The entries behind `score` as a JSON-encoded **string** holding an array of `{\"Value\": <integer>, \"Description\": <string>}`. Parse it before use. Scored entries come first, followed by informational entries with `Value` 0, which can be long. Empty string when no details were stored.  The webhook `signals` are the entries with a non-zero `Value`, in the same order, with each description turned into a signal name (for example `Is proxy` becomes `proxy`). Descriptions are free text for display: never branch on them.
 	ScoreDetails *string `json:"score_details,omitempty"`
@@ -129,8 +129,8 @@ type HistoryRow struct {
 	LatencyTest bool `json:"latency_test"`
 	// Same meaning as `detection_flags.device_spoofing`.
 	DeviceSpoofing bool `json:"device_spoofing"`
-	// Same meaning as `detection_flags.rate_limited`. Older payloads used banned_ip.
-	RateLimited bool `json:"rate_limited"`
+	// Same meaning as `detection_flags.banned_ip`.
+	BannedIp bool `json:"banned_ip"`
 	// Same meaning as `detection_flags.ai_bot`.
 	AiBot bool `json:"ai_bot"`
 	// Same meaning as `detection_flags.ai_browser`.
@@ -144,7 +144,7 @@ type _HistoryRow HistoryRow
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, createdAt string, ver int64, isVpn bool, isTor bool, isProxy bool, isPrivacyRelay bool, networkCheckIncomplete bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool, detectionFlags DetectionFlags, ipMismatch bool, latencyTest bool, deviceSpoofing bool, rateLimited bool, aiBot bool, aiBrowser bool) *HistoryRow {
+func NewHistoryRow(identificationId string, sessionId string, cookieId string, domain string, userHid string, deviceId string, visitorId string, ip string, os string, browser string, deviceType string, country string, connectionType string, score int32, createdAt string, ver int64, isVpn bool, isTor bool, isProxy bool, isPrivacyRelay bool, networkCheckIncomplete bool, checkIncomplete bool, isAntidetect bool, isOsMismatch bool, isOsNotDetected bool, isTimezoneMismatch bool, isJsDisabled bool, isBrowserAutomation bool, isIncognito bool, isSearchBot bool, detectionFlags DetectionFlags, ipMismatch bool, latencyTest bool, deviceSpoofing bool, bannedIp bool, aiBot bool, aiBrowser bool) *HistoryRow {
 	this := HistoryRow{}
 	this.IdentificationId = identificationId
 	this.SessionId = sessionId
@@ -180,7 +180,7 @@ func NewHistoryRow(identificationId string, sessionId string, cookieId string, d
 	this.IpMismatch = ipMismatch
 	this.LatencyTest = latencyTest
 	this.DeviceSpoofing = deviceSpoofing
-	this.RateLimited = rateLimited
+	this.BannedIp = bannedIp
 	this.AiBot = aiBot
 	this.AiBrowser = aiBrowser
 	return &this
@@ -1682,28 +1682,28 @@ func (o *HistoryRow) SetDeviceSpoofing(v bool) {
 	o.DeviceSpoofing = v
 }
 
-// GetRateLimited returns the RateLimited field value
-func (o *HistoryRow) GetRateLimited() bool {
+// GetBannedIp returns the BannedIp field value
+func (o *HistoryRow) GetBannedIp() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.RateLimited
+	return o.BannedIp
 }
 
-// GetRateLimitedOk returns a tuple with the RateLimited field value
+// GetBannedIpOk returns a tuple with the BannedIp field value
 // and a boolean to check if the value has been set.
-func (o *HistoryRow) GetRateLimitedOk() (*bool, bool) {
+func (o *HistoryRow) GetBannedIpOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RateLimited, true
+	return &o.BannedIp, true
 }
 
-// SetRateLimited sets field value
-func (o *HistoryRow) SetRateLimited(v bool) {
-	o.RateLimited = v
+// SetBannedIp sets field value
+func (o *HistoryRow) SetBannedIp(v bool) {
+	o.BannedIp = v
 }
 
 // GetAiBot returns the AiBot field value
@@ -1861,7 +1861,7 @@ func (o HistoryRow) ToMap() (map[string]interface{}, error) {
 	toSerialize["ip_mismatch"] = o.IpMismatch
 	toSerialize["latency_test"] = o.LatencyTest
 	toSerialize["device_spoofing"] = o.DeviceSpoofing
-	toSerialize["rate_limited"] = o.RateLimited
+	toSerialize["banned_ip"] = o.BannedIp
 	toSerialize["ai_bot"] = o.AiBot
 	toSerialize["ai_browser"] = o.AiBrowser
 
@@ -1911,7 +1911,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		"ip_mismatch",
 		"latency_test",
 		"device_spoofing",
-		"rate_limited",
+		"banned_ip",
 		"ai_bot",
 		"ai_browser",
 	}
@@ -1998,7 +1998,7 @@ func (o *HistoryRow) UnmarshalJSON(data []byte) (err error) {
 		delete(additionalProperties, "ip_mismatch")
 		delete(additionalProperties, "latency_test")
 		delete(additionalProperties, "device_spoofing")
-		delete(additionalProperties, "rate_limited")
+		delete(additionalProperties, "banned_ip")
 		delete(additionalProperties, "ai_bot")
 		delete(additionalProperties, "ai_browser")
 		o.AdditionalProperties = additionalProperties

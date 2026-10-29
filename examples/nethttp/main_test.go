@@ -98,7 +98,7 @@ func TestSignupPolicy(t *testing.T) {
 		{"reuse", `{"identificationId":"` + trusted + `"}`, 403, "replayed"},
 		{"dangerous band", `{"identificationId":"` + dangerous + `"}`, 403, "blocked_band"},
 		{"automation flag", `{"identificationId":"` + automation + `"}`, 403, "blocked_flag"},
-		{"rate limited", `{"identificationId":"` + limited + `"}`, 403, "rate_limited"},
+		{"rate limited", `{"identificationId":"` + limited + `"}`, 403, "banned_ip"},
 		{"missing", `{"identificationId":"` + missing + `"}`, 403, "missing"},
 		{"invalid id", `{"identificationId":"abc"}`, 400, ""},
 		{"no id", `{}`, 400, ""},

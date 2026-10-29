@@ -66,10 +66,8 @@ type LegacyDetectionFlags struct {
 	LatencyTest *bool `json:"latency_test,omitempty"`
 	// Previous public name of the latency detector. Current 2026-10-13 payloads use latency_test.
 	WsTcpLatency *bool `json:"ws_tcp_latency,omitempty"`
-	// Current public name of the banned-IP flag. Payloads from schema 2026-10-13 before the slug rename used rate_limited.
+	// The visitor exceeded the identification rate limit.
 	BannedIp *bool `json:"banned_ip,omitempty"`
-	// Previous public name of the banned-IP flag. Current 2026-10-13 payloads use banned_ip.
-	RateLimited *bool `json:"rate_limited,omitempty"`
 	// An accepted bot is classified as AI training or user-requested fetch. ChatGPT-User, Claude-User and Perplexity-User are AI bots, not AI browsers. Weight 0. The flag is optional on older payloads; its absence is not an evaluated negative result. Provider claims alone do not grant zero risk.
 	AiBot *bool `json:"ai_bot,omitempty"`
 	// A browser is identified by separate verified browser infrastructure. A generic browser User-Agent or a verified provider alone is insufficient. Weight 0. Optional on older payloads; absence is not an evaluated negative.
@@ -706,38 +704,6 @@ func (o *LegacyDetectionFlags) SetBannedIp(v bool) {
 	o.BannedIp = &v
 }
 
-// GetRateLimited returns the RateLimited field value if set, zero value otherwise.
-func (o *LegacyDetectionFlags) GetRateLimited() bool {
-	if o == nil || IsNil(o.RateLimited) {
-		var ret bool
-		return ret
-	}
-	return *o.RateLimited
-}
-
-// GetRateLimitedOk returns a tuple with the RateLimited field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *LegacyDetectionFlags) GetRateLimitedOk() (*bool, bool) {
-	if o == nil || IsNil(o.RateLimited) {
-		return nil, false
-	}
-	return o.RateLimited, true
-}
-
-// HasRateLimited returns a boolean if a field has been set.
-func (o *LegacyDetectionFlags) HasRateLimited() bool {
-	if o != nil && !IsNil(o.RateLimited) {
-		return true
-	}
-
-	return false
-}
-
-// SetRateLimited gets a reference to the given bool and assigns it to the RateLimited field.
-func (o *LegacyDetectionFlags) SetRateLimited(v bool) {
-	o.RateLimited = &v
-}
-
 // GetAiBot returns the AiBot field value if set, zero value otherwise.
 func (o *LegacyDetectionFlags) GetAiBot() bool {
 	if o == nil || IsNil(o.AiBot) {
@@ -882,9 +848,6 @@ func (o LegacyDetectionFlags) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.BannedIp) {
 		toSerialize["banned_ip"] = o.BannedIp
-	}
-	if !IsNil(o.RateLimited) {
-		toSerialize["rate_limited"] = o.RateLimited
 	}
 	if !IsNil(o.AiBot) {
 		toSerialize["ai_bot"] = o.AiBot

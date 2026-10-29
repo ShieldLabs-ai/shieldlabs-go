@@ -30,7 +30,6 @@ type IdentificationScoredDataDetectionFlags struct {
 	LatencyTest            *bool `json:"latency_test,omitempty"`
 	WsTcpLatency           *bool `json:"ws_tcp_latency,omitempty"`
 	BannedIp               *bool `json:"banned_ip,omitempty"`
-	RateLimited            *bool `json:"rate_limited,omitempty"`
 	CheckIncomplete        *bool `json:"check_incomplete,omitempty"`
 	OsNotDetected          *bool `json:"os_not_detected,omitempty"`
 	TimezoneMismatch       *bool `json:"timezone_mismatch,omitempty"`
@@ -388,38 +387,6 @@ func (o *IdentificationScoredDataDetectionFlags) HasBannedIp() bool {
 // SetBannedIp gets a reference to the given bool and assigns it to the BannedIp field.
 func (o *IdentificationScoredDataDetectionFlags) SetBannedIp(v bool) {
 	o.BannedIp = &v
-}
-
-// GetRateLimited returns the RateLimited field value if set, zero value otherwise.
-func (o *IdentificationScoredDataDetectionFlags) GetRateLimited() bool {
-	if o == nil || IsNil(o.RateLimited) {
-		var ret bool
-		return ret
-	}
-	return *o.RateLimited
-}
-
-// GetRateLimitedOk returns a tuple with the RateLimited field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *IdentificationScoredDataDetectionFlags) GetRateLimitedOk() (*bool, bool) {
-	if o == nil || IsNil(o.RateLimited) {
-		return nil, false
-	}
-	return o.RateLimited, true
-}
-
-// HasRateLimited returns a boolean if a field has been set.
-func (o *IdentificationScoredDataDetectionFlags) HasRateLimited() bool {
-	if o != nil && !IsNil(o.RateLimited) {
-		return true
-	}
-
-	return false
-}
-
-// SetRateLimited gets a reference to the given bool and assigns it to the RateLimited field.
-func (o *IdentificationScoredDataDetectionFlags) SetRateLimited(v bool) {
-	o.RateLimited = &v
 }
 
 // GetCheckIncomplete returns the CheckIncomplete field value if set, zero value otherwise.
@@ -1006,9 +973,6 @@ func (o IdentificationScoredDataDetectionFlags) ToMap() (map[string]interface{},
 	if !IsNil(o.BannedIp) {
 		toSerialize["banned_ip"] = o.BannedIp
 	}
-	if !IsNil(o.RateLimited) {
-		toSerialize["rate_limited"] = o.RateLimited
-	}
 	if !IsNil(o.CheckIncomplete) {
 		toSerialize["check_incomplete"] = o.CheckIncomplete
 	}
@@ -1092,7 +1056,6 @@ func (o *IdentificationScoredDataDetectionFlags) UnmarshalJSON(data []byte) (err
 		delete(additionalProperties, "latency_test")
 		delete(additionalProperties, "ws_tcp_latency")
 		delete(additionalProperties, "banned_ip")
-		delete(additionalProperties, "rate_limited")
 		delete(additionalProperties, "check_incomplete")
 		delete(additionalProperties, "os_not_detected")
 		delete(additionalProperties, "timezone_mismatch")

@@ -293,7 +293,7 @@ func (f *DetectionFlags) field(name string) *bool {
 		return &f.AntiDetectBrowser
 	case FlagDeviceSpoofing:
 		return &f.DeviceSpoofing
-	case FlagBannedIP, "rate_limited":
+	case FlagBannedIP:
 		return &f.BannedIP
 	case FlagIncognito:
 		return &f.Incognito

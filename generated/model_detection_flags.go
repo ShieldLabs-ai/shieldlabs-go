@@ -47,8 +47,8 @@ type DetectionFlags struct {
 	// An anti-detect browser was detected.
 	AntiDetectBrowser bool `json:"anti_detect_browser"`
 	DeviceSpoofing    bool `json:"device_spoofing"`
-	// The visitor exceeded the identification rate limit. Older payloads used banned_ip.
-	RateLimited bool `json:"rate_limited"`
+	// The visitor exceeded the identification rate limit.
+	BannedIp bool `json:"banned_ip"`
 	// The browser runs in a private window. False for a search-engine crawler, an AI bot, or an AI browser. Weight 0, and present in signals when true.
 	Incognito bool `json:"incognito"`
 	// A search-engine crawler. Its Risk Score is always 0. Weight 0, and present in signals when true.
@@ -69,7 +69,7 @@ type _DetectionFlags DetectionFlags
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewDetectionFlags(vpn bool, proxy bool, privateRelay bool, checkIncomplete bool, networkCheckIncomplete bool, osNotDetected bool, timezoneMismatch bool, javascriptDisabled bool, osMismatch bool, ipMismatch bool, latencyTest bool, antiDetectBrowser bool, deviceSpoofing bool, rateLimited bool, incognito bool, searchBot bool, aiBot bool, browserAutomation bool, aiBrowser bool, tor bool) *DetectionFlags {
+func NewDetectionFlags(vpn bool, proxy bool, privateRelay bool, checkIncomplete bool, networkCheckIncomplete bool, osNotDetected bool, timezoneMismatch bool, javascriptDisabled bool, osMismatch bool, ipMismatch bool, latencyTest bool, antiDetectBrowser bool, deviceSpoofing bool, bannedIp bool, incognito bool, searchBot bool, aiBot bool, browserAutomation bool, aiBrowser bool, tor bool) *DetectionFlags {
 	this := DetectionFlags{}
 	this.Vpn = vpn
 	this.Proxy = proxy
@@ -84,7 +84,7 @@ func NewDetectionFlags(vpn bool, proxy bool, privateRelay bool, checkIncomplete 
 	this.LatencyTest = latencyTest
 	this.AntiDetectBrowser = antiDetectBrowser
 	this.DeviceSpoofing = deviceSpoofing
-	this.RateLimited = rateLimited
+	this.BannedIp = bannedIp
 	this.Incognito = incognito
 	this.SearchBot = searchBot
 	this.AiBot = aiBot
@@ -414,28 +414,28 @@ func (o *DetectionFlags) SetDeviceSpoofing(v bool) {
 	o.DeviceSpoofing = v
 }
 
-// GetRateLimited returns the RateLimited field value
-func (o *DetectionFlags) GetRateLimited() bool {
+// GetBannedIp returns the BannedIp field value
+func (o *DetectionFlags) GetBannedIp() bool {
 	if o == nil {
 		var ret bool
 		return ret
 	}
 
-	return o.RateLimited
+	return o.BannedIp
 }
 
-// GetRateLimitedOk returns a tuple with the RateLimited field value
+// GetBannedIpOk returns a tuple with the BannedIp field value
 // and a boolean to check if the value has been set.
-func (o *DetectionFlags) GetRateLimitedOk() (*bool, bool) {
+func (o *DetectionFlags) GetBannedIpOk() (*bool, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RateLimited, true
+	return &o.BannedIp, true
 }
 
-// SetRateLimited sets field value
-func (o *DetectionFlags) SetRateLimited(v bool) {
-	o.RateLimited = v
+// SetBannedIp sets field value
+func (o *DetectionFlags) SetBannedIp(v bool) {
+	o.BannedIp = v
 }
 
 // GetIncognito returns the Incognito field value
@@ -605,7 +605,7 @@ func (o DetectionFlags) ToMap() (map[string]interface{}, error) {
 	toSerialize["latency_test"] = o.LatencyTest
 	toSerialize["anti_detect_browser"] = o.AntiDetectBrowser
 	toSerialize["device_spoofing"] = o.DeviceSpoofing
-	toSerialize["rate_limited"] = o.RateLimited
+	toSerialize["banned_ip"] = o.BannedIp
 	toSerialize["incognito"] = o.Incognito
 	toSerialize["search_bot"] = o.SearchBot
 	toSerialize["ai_bot"] = o.AiBot
@@ -633,7 +633,7 @@ func (o *DetectionFlags) UnmarshalJSON(data []byte) (err error) {
 		"latency_test",
 		"anti_detect_browser",
 		"device_spoofing",
-		"rate_limited",
+		"banned_ip",
 		"incognito",
 		"search_bot",
 		"ai_bot",
