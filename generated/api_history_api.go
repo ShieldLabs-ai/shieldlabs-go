@@ -63,9 +63,6 @@ type ApiGetHistoryEntityRequest struct {
 	source                 *[]string
 	campaign               *[]string
 	deviceIdSource         *string
-	relation               *string
-	relationLimit          *int32
-	relationPageToken      *string
 }
 
 // Maximum records in the page, from 1 through 100.
@@ -257,24 +254,6 @@ func (r ApiGetHistoryEntityRequest) Campaign(campaign []string) ApiGetHistoryEnt
 // Device cards only. &#x60;legacy&#x60; or &#x60;fp21_record&#x60;.
 func (r ApiGetHistoryEntityRequest) DeviceIdSource(deviceIdSource string) ApiGetHistoryEntityRequest {
 	r.deviceIdSource = &deviceIdSource
-	return r
-}
-
-// Linked-id page for this card. Identification cards reject this parameter.
-func (r ApiGetHistoryEntityRequest) Relation(relation string) ApiGetHistoryEntityRequest {
-	r.relation = &relation
-	return r
-}
-
-// Linked records in one page, from 1 through 100.
-func (r ApiGetHistoryEntityRequest) RelationLimit(relationLimit int32) ApiGetHistoryEntityRequest {
-	r.relationLimit = &relationLimit
-	return r
-}
-
-// Opaque token from the previous linked-id page.
-func (r ApiGetHistoryEntityRequest) RelationPageToken(relationPageToken string) ApiGetHistoryEntityRequest {
-	r.relationPageToken = &relationPageToken
 	return r
 }
 
@@ -473,19 +452,6 @@ func (a *HistoryAPIAPIService) GetHistoryEntityExecute(r ApiGetHistoryEntityRequ
 	}
 	if r.deviceIdSource != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "device_id_source", r.deviceIdSource, "form", "")
-	}
-	if r.relation != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "relation", r.relation, "form", "")
-	}
-	if r.relationLimit != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "relation_limit", r.relationLimit, "form", "")
-	} else {
-		var defaultValue int32 = 20
-		parameterAddToHeaderOrQuery(localVarQueryParams, "relation_limit", defaultValue, "form", "")
-		r.relationLimit = &defaultValue
-	}
-	if r.relationPageToken != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "relation_page_token", r.relationPageToken, "form", "")
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -720,7 +686,7 @@ type ApiListHistoryEntitiesRequest struct {
 	riskBands              *[]string
 	hreMinAccounts         *int32
 	hreMinDevices          *int32
-	ids                    *[]string
+	ids                    *string
 	isVpn                  *string
 	isTor                  *string
 	isProxy                *string
@@ -794,8 +760,8 @@ func (r ApiListHistoryEntitiesRequest) HreMinDevices(hreMinDevices int32) ApiLis
 	return r
 }
 
-// User ids. Repeat the key. User list only, at most 100.
-func (r ApiListHistoryEntitiesRequest) Ids(ids []string) ApiListHistoryEntitiesRequest {
+// One user id. User list only. A repeated key returns 400.
+func (r ApiListHistoryEntitiesRequest) Ids(ids string) ApiListHistoryEntitiesRequest {
 	r.ids = &ids
 	return r
 }
@@ -949,7 +915,7 @@ Lists `identifications` or `user` for one domain. `{domain_id}` is the public do
 from `GET /api/v1/domains`. Literal `all` returns `403 domain_scope_not_supported`. A list of
 `visitor`, `device` or `ip` returns `403 entity_list_disabled`.
 
-Repeat `risk_bands`, `risk_signals`, `source`, `campaign` and `ids`. Flags are `true` or `false`
+Repeat `risk_bands`, `risk_signals`, `source` and `campaign`. Flags are `true` or `false`
 and combine with AND. Signal codes combine with OR. `source` and `campaign` are one OR group,
 at most 8 values together. `is_abuser`, `is_datacenter` and
 `is_stun_not_checked` return `400`. A nested `filter` or `chips` returns `400`.
@@ -1040,15 +1006,7 @@ func (a *HistoryAPIAPIService) ListHistoryEntitiesExecute(r ApiListHistoryEntiti
 		r.hreMinDevices = &defaultValue
 	}
 	if r.ids != nil {
-		t := *r.ids
-		if reflect.TypeOf(t).Kind() == reflect.Slice {
-			s := reflect.ValueOf(t)
-			for i := 0; i < s.Len(); i++ {
-				parameterAddToHeaderOrQuery(localVarQueryParams, "ids", s.Index(i).Interface(), "form", "multi")
-			}
-		} else {
-			parameterAddToHeaderOrQuery(localVarQueryParams, "ids", t, "form", "multi")
-		}
+		parameterAddToHeaderOrQuery(localVarQueryParams, "ids", r.ids, "form", "")
 	}
 	if r.isVpn != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "is_vpn", r.isVpn, "form", "")

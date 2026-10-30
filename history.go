@@ -264,6 +264,11 @@ func (s *HistoryService) List(ctx context.Context, resource string, opts *Histor
 		}
 		extra = opts.Query
 	}
+	if ids, ok := extra["ids"]; ok {
+		if resource != "user" || len(ids) != 1 || ids[0] == "" || len(ids[0]) > 512 {
+			return nil, validationError("ids must contain one user id on the user list")
+		}
+	}
 	prefix, err := s.c.domainPrefix()
 	if err != nil {
 		return nil, err
