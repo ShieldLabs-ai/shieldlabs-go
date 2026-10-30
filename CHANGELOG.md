@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Accept one user-list `ids` value and reject repeated values before HTTP.
+- Refresh generated clients from OpenAPI: `ids` is a string and unsupported relation inputs are removed.
+- Keep bands, risk signals, source and campaign repeatable.
+
+
 All notable changes to this module are documented in this file. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this module follows
 [Semantic Versioning](https://semver.org/).

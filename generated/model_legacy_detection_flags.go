@@ -66,7 +66,7 @@ type LegacyDetectionFlags struct {
 	LatencyTest *bool `json:"latency_test,omitempty"`
 	// Previous public name of the latency detector. Current 2026-10-13 payloads use latency_test.
 	WsTcpLatency *bool `json:"ws_tcp_latency,omitempty"`
-	// The visitor exceeded the identification rate limit.
+	// Current public name of the banned-IP flag.
 	BannedIp *bool `json:"banned_ip,omitempty"`
 	// An accepted bot is classified as AI training or user-requested fetch. ChatGPT-User, Claude-User and Perplexity-User are AI bots, not AI browsers. Weight 0. The flag is optional on older payloads; its absence is not an evaluated negative result. Provider claims alone do not grant zero risk.
 	AiBot *bool `json:"ai_bot,omitempty"`
